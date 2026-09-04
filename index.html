@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a1210">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="产业生态网络">
+<link rel="manifest" href='data:application/manifest+json,{"name":"产业生态网络","short_name":"生态网络","start_url":".","display":"standalone","background_color":"%230a1210","theme_color":"%230a1210"}'>
+<title>产业生态网络 · 菌群式股价关联预测平台</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js" integrity="sha384-pPi0zxBAoDu6+JXW/C68UZLvBUUtU+7zonhif43rqj7pxsGyqyqzcian2Rj37Rss" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<style>
+:root{
+  --bg:#0a1210;--bg2:#0d1714;--panel:#111e18;--panel2:#16271f;--line:#24382e;--line2:#314c3f;
+  --txt:#dcebe2;--txt2:#9db5a8;--txt3:#6b8578;
+  --eco-pos:#58c8f0;--eco-neg:#f0a048;--up:#f0484e;--down:#1fbf85;--gold:#e6b34d;--accent:#4fd69c;
+  --serif:'Noto Serif SC',Georgia,'Songti SC',serif;
+  --sans:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14px;line-height:1.55}
+body{background:radial-gradient(1100px 480px at 80% -8%,rgba(79,214,156,.06),transparent 60%),var(--bg);min-height:100vh}
+.num{font-variant-numeric:tabular-nums}
+button{font-family:var(--sans);cursor:pointer}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#2c4438;border-radius:6px}
+/* 顶栏 */
+.topbar{background:rgba(13,23,20,.92);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:100;backdrop-filter:blur(8px)}
+.topbar-inner{max-width:1580px;margin:0 auto;padding:11px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;flex-shrink:0}
+.brand-mark{width:38px;height:38px;border-radius:11px;background:radial-gradient(circle at 35% 30%,rgba(79,214,156,.35),rgba(79,214,156,.06));border:1px solid rgba(79,214,156,.4);display:flex;align-items:center;justify-content:center}
+.brand-text b{font-family:var(--serif);font-size:16px;font-weight:900;letter-spacing:1px}
+.brand-text span{display:block;font-size:10px;color:var(--txt3);letter-spacing:1.6px}
+.search-wrap{position:relative;flex:1;min-width:240px;max-width:440px}
+.search-input{width:100%;height:40px;padding:0 38px 0 14px;background:var(--panel);border:1px solid var(--line2);border-radius:9px;color:var(--txt);font-size:14px}
+.search-input:focus{outline:none;border-color:var(--accent)}
+.search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--txt3);pointer-events:none}
+.search-dropdown{position:absolute;top:46px;left:0;right:0;max-height:340px;overflow-y:auto;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;z-index:200;display:none;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.search-dropdown.open{display:block}
+.sd-item{display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer;border-bottom:1px solid var(--line)}
+.sd-item:hover,.sd-item.active{background:rgba(79,214,156,.08)}
+.sd-code{color:var(--eco-pos);font-size:12.5px;min-width:64px}
+.sd-name{font-size:14px}.sd-ind{font-size:11px;color:var(--txt3);margin-left:auto;border:1px solid var(--line2);padding:1px 8px;border-radius:20px}
+.data-src{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt3)}
+.dot-live{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.dot-off{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+/* Tabs */
+.tabs{max-width:1580px;margin:0 auto;padding:14px 20px 0;display:flex;gap:8px;flex-wrap:wrap}
+.tab-btn{background:transparent;border:1px solid var(--line2);color:var(--txt2);padding:10px 18px;border-radius:9px 9px 0 0;font-size:13.5px;border-bottom:none;transition:.15s}
+.tab-btn:hover{color:var(--txt)}
+.tab-btn.active{background:var(--panel);color:var(--accent);border-color:var(--accent);font-weight:700}
+.workspace{max-width:1580px;margin:0 auto;padding:16px 20px 40px}
+.view{display:none}.view.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* 面板与卡片 */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:15px}
+.panel-head{display:flex;align-items:center;gap:12px;margin-bottom:13px;flex-wrap:wrap}
+.panel-head h3{font-family:var(--serif);font-size:15.5px;font-weight:700;letter-spacing:.5px}
+.panel-head h3::before{content:'';display:inline-block;width:4px;height:15px;background:var(--accent);border-radius:2px;margin-right:9px;vertical-align:-2px}
+.hint{font-size:12px;color:var(--txt3)}
+.btn{background:linear-gradient(180deg,#3bb884,#2c9c6d);border:1px solid #4fd69c;color:#06110c;font-weight:700;padding:9px 18px;border-radius:9px;font-size:13.5px;transition:.15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn.ghost{background:transparent;color:var(--txt2);border-color:var(--line2);font-weight:400}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.seg{display:inline-flex;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;border:none;color:var(--txt2);padding:7px 13px;font-size:12.5px;border-right:1px solid var(--line2)}
+.seg button:last-child{border-right:none}.seg button.on{background:rgba(79,214,156,.16);color:var(--accent);font-weight:700}
+.ctrl-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ctrl-label{font-size:12.5px;color:var(--txt3)}
+/* 统计卡 */
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:15px}
+.sum-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 16px}
+.sum-card label{font-size:12px;color:var(--txt3);display:block;margin-bottom:5px}
+.sum-card .big{font-family:var(--serif);font-size:24px;font-weight:900;line-height:1.2}
+.sum-card .sub{font-size:11.5px;color:var(--txt3);margin-top:3px}
+.up-text{color:var(--up)}.down-text{color:var(--down)}.pos-text{color:var(--eco-pos)}.neg-text{color:var(--eco-neg)}.gold-text{color:var(--gold)}
+/* 行业 chips */
+.chip-row{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line2);background:transparent;color:var(--txt2);padding:6px 13px;border-radius:20px;font-size:12.5px;transition:.12s}
+.chip.on{color:#06110c;font-weight:700}
+.chip:hover{border-color:var(--accent)}
+/* 图表 */
+.chart-box{width:100%;min-height:420px}
+.chart-box.tall{min-height:560px}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:15px}
+/* 表格 */
+.tbl-wrap{overflow-x:auto}
+table.data-tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+.data-tbl th{text-align:left;color:var(--txt3);font-weight:500;font-size:12px;padding:9px 10px;border-bottom:1px solid var(--line2);white-space:nowrap}
+.data-tbl td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.data-tbl tbody tr{cursor:pointer;transition:.12s}
+.data-tbl tbody tr:hover{background:rgba(79,214,156,.06)}
+.data-tbl tbody tr.active{background:rgba(79,214,156,.1)}
+.tag{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;border:1px solid var(--line2);color:var(--txt2)}
+.tag.up{color:var(--eco-pos);border-color:rgba(88,200,240,.4)}
+.tag.compete{color:var(--eco-neg);border-color:rgba(240,160,72,.4);border-style:dashed}
+.wbar{display:inline-block;width:72px;height:6px;background:var(--bg2);border-radius:4px;overflow:hidden;vertical-align:middle}
+.wbar i{display:block;height:100%;background:linear-gradient(90deg,#2c9c6d,#4fd69c)}
+.wbar.neg i{background:linear-gradient(90deg,#b06a28,#f0a048)}
+/* 生态位透视 */
+.niche-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.niche-title{font-family:var(--serif);font-size:22px;font-weight:900}
+.niche-meta{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--txt2)}
+.niche-meta b{font-size:15px;color:var(--txt)}
+.eco-note{background:linear-gradient(135deg,rgba(79,214,156,.07),rgba(88,200,240,.03));border:1px solid rgba(79,214,156,.25);border-radius:11px;padding:14px 16px;font-size:13.5px;line-height:1.9}
+.eco-note b{color:var(--accent)}
+.eco-note .term{color:var(--gold);border-bottom:1px dashed var(--gold);cursor:help}
+.rel-line{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt2);margin:3px 0}
+/* 方法学 */
+.method-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:13px}
+.method-card{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:15px 17px}
+.method-card h4{font-family:var(--serif);font-size:14.5px;margin-bottom:7px;color:var(--accent)}
+.method-card p{font-size:12.8px;color:var(--txt2);line-height:1.8}
+.method-card .formula{font-family:Georgia,serif;background:var(--bg);border-radius:7px;padding:8px 11px;margin-top:8px;font-size:12.5px;color:var(--gold);overflow-x:auto;white-space:nowrap}
+.map-tbl td:first-child{color:var(--eco-pos);white-space:nowrap}
+/* toast / loading */
+.toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--txt);padding:10px 20px;border-radius:10px;font-size:13px;z-index:3000;opacity:0;transition:.25s;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1}
+.loading-mask{position:fixed;inset:0;background:rgba(8,15,12,.72);z-index:2500;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.loading-mask.show{display:flex}
+.spinner{width:42px;height:42px;border:3px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-mask .lt{font-size:13px;color:var(--txt2)}
+.progress-line{width:240px;height:6px;background:var(--line);border-radius:4px;overflow:hidden}
+.progress-line i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.legend-inline{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--txt2)}
+.legend-inline i{display:inline-block;width:18px;height:0;border-top-width:2px;border-top-style:solid;vertical-align:middle;margin-right:6px}
+/* 响应式 */
+@media (max-width:768px){
+  .topbar-inner{padding:10px 12px;gap:10px}.data-src{display:none}
+  .workspace,.tabs{padding-left:12px;padding-right:12px}
+  .grid-2{grid-template-columns:1fr}.chart-box{min-height:340px}.chart-box.tall{min-height:440px}
+  .tab-btn{padding:9px 12px;font-size:12.5px}
+}
+/* 补充：指标卡/标签/状态点/弱文本 */
+.sum-card span{font-size:12px;color:var(--txt3);display:block;margin-bottom:6px}
+.sum-card b{font-family:var(--serif);font-size:21px;font-weight:900;color:var(--txt);line-height:1.25}
+.niche-meta{display:flex;gap:10px;flex-wrap:wrap}
+.metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 14px;min-width:96px}
+.metric span{display:block;font-size:11px;color:var(--txt3);margin-bottom:3px}
+.metric b{font-family:var(--serif);font-size:18px;font-weight:800}
+.tag{display:inline-block;font-size:11px;padding:2px 9px;border-radius:11px;border:1px solid;white-space:nowrap}
+.tag-u{color:#58c8f0;border-color:#2c5d70;background:rgba(88,200,240,.08)}
+.tag-c{color:#f0a048;border-color:#7a5526;background:rgba(240,160,72,.08)}
+.tag-o{color:#4fd69c;border-color:#2c6b50;background:rgba(79,214,156,.08)}
+.dim{color:var(--txt3);font-size:11px}
+.dot-on{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px rgba(79,214,156,.7)}
+.data-tbl td .dim{margin-left:5px}
+.eco-note ul{margin:8px 0 8px 4px;padding-left:18px}
+.eco-note li{margin:5px 0;line-height:1.7;font-size:13px}
+.formula{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--bg2);border:1px solid var(--line);
+  border-radius:7px;padding:6px 10px;margin:7px 0;font-size:12px;color:#8fd8bc;overflow-x:auto;white-space:nowrap}
+@media(max-width:768px){.niche-head{flex-direction:column;align-items:flex-start;gap:10px}.niche-meta{width:100%}.metric{flex:1;min-width:84px}}
+/* 搜索下拉（显示类 .show） */
+.search-dropdown.show{display:block}
+.dd-group{padding:7px 13px 4px;font-size:11px;letter-spacing:1px;color:var(--txt3);border-top:1px solid var(--line)}
+.dd-group:first-child{border-top:none}
+.dd-item{display:flex;align-items:center;gap:10px;padding:9px 13px;cursor:pointer;border-bottom:1px solid var(--line);transition:.12s}
+.dd-item:last-child{border-bottom:none}
+.dd-item:hover{background:rgba(79,214,156,.1)}
+.dd-item b{font-size:13.5px;font-weight:500;color:var(--txt)}
+.dd-item span{font-size:11.5px;color:var(--txt3)}
+.dd-item.dim{cursor:default;color:var(--txt3);justify-content:center}.dd-item.dim:hover{background:transparent}
+.dd-chain b{color:#aee9cf}
+.dd-tag{margin-left:auto;font-style:normal;font-size:10.5px;color:var(--txt3);border:1px solid var(--line2);border-radius:11px;padding:1px 9px;white-space:nowrap}
+.dd-tag.chain{color:var(--tc,#4fd69c);border-color:var(--tc,#4fd69c)}
+/* 第一页：产业链快捷导航卡 */
+.chain-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:11px;margin:14px 0 4px}
+.chain-card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cc);border-radius:11px;padding:12px 15px;cursor:pointer;transition:.15s;text-align:left}
+.chain-card:hover{background:var(--panel2);transform:translateY(-1px)}
+.chain-card b{font-family:var(--serif);font-size:14.5px;display:block;margin-bottom:4px;color:var(--txt)}
+.chain-card span{font-size:11.5px;color:var(--txt3)}
+.chain-card .cc-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cc);margin-right:6px;vertical-align:middle}
+.sec-title{font-family:var(--serif);font-size:15px;font-weight:700;margin:18px 0 2px;color:var(--txt);display:flex;align-items:center;gap:8px}
+.sec-title::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px}
+/* 多公司关系工作台 */
+.cmp-picker{display:flex;gap:10px;align-items:center;margin:12px 0 8px;flex-wrap:wrap}
+.cmp-search{position:relative;flex:1;min-width:260px}
+.cmp-search input{width:100%;background:var(--bg2);border:1px solid var(--line2);border-radius:9px;color:var(--txt);padding:10px 14px;font-size:13.5px;font-family:var(--sans)}
+.cmp-search input:focus{outline:none;border-color:var(--accent)}
+.cmp-chain-add{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.cmp-chain-add button{background:transparent;border:1px dashed var(--line2);color:var(--txt2);font-size:11.5px;padding:4px 11px;border-radius:14px;transition:.12s}
+.cmp-chain-add button:hover{border-color:var(--accent);color:var(--accent)}
+.cmp-picked{display:flex;gap:8px;flex-wrap:wrap;min-height:34px}
+.pick-chip{display:inline-flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line2);border-radius:16px;padding:5px 8px 5px 13px;font-size:12.5px;color:var(--txt)}
+.pick-chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.pick-chip b{font-weight:500}
+.pick-chip .x{cursor:pointer;color:var(--txt3);padding:0 5px;border-radius:50%;font-style:normal;font-size:14px;line-height:1}
+.pick-chip .x:hover{color:var(--up)}
+.pick-chip.empty{color:var(--txt3);border-style:dashed;background:transparent}
+.cmp-console{padding-top:14px}
+.cmp-timeline{display:flex;align-items:center;gap:14px;margin-top:12px}
+.cmp-timeline input[type=range]{flex:1;accent-color:var(--accent);height:4px}
+.cmp-win-date{font-family:var(--serif);font-size:15px;font-weight:700;color:var(--accent);min-width:210px;text-align:right}
+.cmp-matrix-wrap{overflow:auto;max-height:440px}
+.cmp-matrix{border-collapse:collapse;font-size:11.5px;width:100%}
+.cmp-matrix th,.cmp-matrix td{border:1px solid var(--line);padding:5px 7px;text-align:center;white-space:nowrap;cursor:pointer}
+.cmp-matrix th{background:var(--panel2);color:var(--txt2);position:sticky;z-index:2}
+.cmp-matrix thead th{top:0}.cmp-matrix tbody th{left:0;position:sticky}
+.cmp-matrix td.diag{background:var(--bg2);color:var(--txt3);cursor:default}
+.cmp-matrix td.sel{outline:2px solid var(--gold);outline-offset:-2px}
+.cmp-matrix tbody tr:hover td{filter:brightness(1.15)}
+.ind-cross-note{margin-top:10px;font-size:13px;line-height:1.8;color:var(--txt2)}
+.ind-cross-note b{color:var(--accent)}
+.rel-pos{color:var(--eco-pos)}.rel-neg{color:var(--eco-neg)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4fd69c" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"></circle><circle cx="12" cy="12" r="7.5" stroke-dasharray="3 3"></circle><circle cx="12" cy="12" r="11" opacity=".5"></circle><line x1="12" y1="1" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="23"></line><line x1="1" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="23" y2="12"></line></svg>
+      </div>
+      <div class="brand-text"><b>产业生态网络</b><span>MICROBIOME MARKET NETWORK</span></div>
+    </div>
+    <div class="search-wrap">
+      <input class="search-input" id="searchInput" placeholder="输入股票名称 / 拼音 / 代码，如 宁德时代、ndsd、300750" autocomplete="off">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line></svg>
+      <div class="search-dropdown" id="searchDropdown"></div>
+    </div>
+    <div class="data-src"><span class="dot-off" id="srcDot"></span><span id="srcText">内置群落数据</span></div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-view="atlas">产业生态图谱</button>
+  <button class="tab-btn" data-view="niche">公司生态位透视</button>
+  <button class="tab-btn" data-view="industry">行业群落模型</button>
+  <button class="tab-btn" data-view="foodhealth">食品大健康</button>
+  <button class="tab-btn" data-view="probio">益生菌</button>
+  <button class="tab-btn" data-view="compare">多公司关系</button>
+  <button class="tab-btn" data-view="method">模型与生态学方法</button>
+</nav>
+
+<main class="workspace">
+  <!-- ===== 视图1：产业生态图谱 ===== -->
+  <section class="view active" id="view-atlas">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>全产业「菌群」共生网络</h3>
+        <span class="hint">节点=上市公司（物种），实线=供应链共生关系，虚线=竞争关系；点击任意节点进入该公司生态位透视</span>
+      </div>
+      <div class="sec-title">十一大产业链群落 · 点击进入</div>
+      <div class="chain-grid" id="atlasChainGrid"></div>
+      <div class="ctrl-row" style="margin:14px 0 12px">
+        <span class="ctrl-label">行业群落</span>
+        <div class="chip-row" id="atlasIndChips"></div>
+      </div>
+      <div class="ctrl-row" style="margin-bottom:12px">
+        <span class="ctrl-label">关系</span>
+        <div class="seg" id="atlasRelSeg">
+          <button data-r="all" class="on">全部关系</button><button data-r="up">仅供应链</button><button data-r="compete">仅竞争</button>
+        </div>
+        <span class="ctrl-label" style="margin-left:10px">布局</span>
+        <div class="seg" id="atlasLayoutSeg">
+          <button data-l="force" class="on">力导向</button><button data-l="circular">环形培养皿</button>
+        </div>
+      </div>
+      <div class="legend-inline">
+        <span><i style="border-top-style:solid;border-color:#58c8f0"></i>供应链（共生）</span>
+        <span><i style="border-top-style:dashed;border-color:#f0a048"></i>竞争（生态位重叠）</span>
+        <span>节点大小 = 关系度（生态位宽度）</span>
+      </div>
+      <div class="chart-box tall" id="atlasChart"></div>
+    </div>
+    <div class="sum-grid" id="atlasSummary"></div>
+  </section>
+
+  <!-- ===== 视图2：公司生态位透视 ===== -->
+  <section class="view" id="view-niche">
+    <div class="panel">
+      <div class="niche-head">
+        <div>
+          <div class="niche-title" id="ncName">明阳智能</div>
+          <div class="hint" id="ncCode">sh601615 · 风电群落 · 关键种分析</div>
+        </div>
+        <div class="niche-meta" id="ncMetrics"></div>
+        <div style="margin-left:auto;display:flex;gap:9px">
+          <div class="seg" id="ncHorizonSeg">
+            <button data-h="5">5日</button><button data-h="10" class="on">10日</button><button data-h="20">20日</button>
+          </div>
+          <button class="btn" id="ncRefresh">重新采样（在线观测）</button>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h3>生态位关系网</h3><span class="hint">上游供体 → 目标物种 → 下游受体</span></div>
+        <div class="chart-box" id="nicheChart" style="min-height:440px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>关联物种影响清单</h3><span class="hint">权重 · 传导时效 · 显著性</span></div>
+        <div class="tbl-wrap" id="ncRelTable"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>群落动力学价格预测（贝叶斯 gLV 后验路径）</h3><span class="hint" id="ncPredHint"></span></div>
+      <div class="chart-box" id="ncPredChart" style="min-height:380px"></div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h3>关联企业贡献分解</h3><span class="hint">各物种对目标期末价格的边际贡献</span></div>
+        <div class="chart-box" id="ncContribChart" style="min-height:340px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>生态学解读：为什么这样涨跌</h3></div>
+        <div class="eco-note" id="ncEcoNote"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 视图3：行业群落模型 ===== -->
+  <section class="view" id="view-industry">
+    <div class="panel">
+      <div class="panel-head"><h3>行业「菌群」选择</h3><span class="hint">点 1 个看群落内部；再点第 2~6 个可多选，对比行业之间的 gLV 促进/抑制关系（再点一次取消）</span></div>
+      <div class="chip-row" id="indChips"></div>
+      <div class="ind-cross-note" id="indCrossNote"></div>
+    </div>
+    <div class="sum-grid" id="indSummary"></div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h3>群落内物种交互网络</h3></div>
+        <div class="chart-box" id="indNetChart" style="min-height:440px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>gLV 交互系数矩阵（作用热图）</h3><span class="hint">行=受作用物种，列=作用来源；青=促进，橙=抑制</span></div>
+        <div class="chart-box" id="indHeatChart" style="min-height:440px"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>行业群落间演替（行业指数 gLV）</h3><span class="hint">把每个行业视为一个「菌群聚集体」，分析群落之间的促进/抑制与轮动</span></div>
+      <div class="chart-box" id="indBetweenChart" style="min-height:400px"></div>
+    </div>
+  </section>
+
+  <!-- ===== 视图6：食品大健康板块 ===== -->
+  <section class="view" id="view-foodhealth">
+    <div class="panel">
+      <div class="panel-head"><h3>食品大健康板块 · 群落总览</h3><span class="hint">营养保健 + 功能食品 + 健康乳品 + 药食同源</span></div>
+      <div class="eco-note" id="foodhealthIntro"></div>
+    </div>
+    <div class="sum-grid" id="foodhealthSummary"></div>
+    <div class="panel">
+      <div class="panel-head"><h3>板块生态图谱</h3><span class="hint" id="foodhealthAtlasHint"></span></div>
+      <div class="legend-inline" style="margin-bottom:8px">
+        <span><i style="border-top-style:solid;border-color:#58c8f0"></i>供应链（共生）</span>
+        <span><i style="border-top-style:dashed;border-color:#f0a048"></i>竞争（生态位重叠）</span>
+        <span>节点大小 = 关系度（生态位宽度）</span>
+      </div>
+      <div class="chart-box tall" id="foodhealthAtlas"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>群落动力学模型（贝叶斯 gLV）</h3>
+        <span class="hint">在线采集板块行情 → 绝对定量/CLR → gLV/VAR/Lasso/BMA 集成</span>
+        <button class="btn" id="foodhealthRun" style="margin-left:auto">拟合板块群落</button></div>
+    </div>
+    <div class="sum-grid" id="foodhealthCommSummary"></div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h3>物种交互网络</h3><span class="hint">青=促进，橙=抑制，粗细=强度</span></div>
+        <div class="chart-box" id="foodhealthNet" style="min-height:420px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>gLV 交互系数矩阵</h3><span class="hint">行=受作用物种，列=作用来源</span></div>
+        <div class="chart-box" id="foodhealthHeat" style="min-height:420px"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>板块指数演替</h3><span class="hint">把板块内物种视为一个「菌群聚集体」的等权净值演化</span></div>
+      <div class="chart-box" id="foodhealthIndex" style="min-height:280px"></div>
+    </div>
+  </section>
+
+  <!-- ===== 视图7：益生菌板块 ===== -->
+  <section class="view" id="view-probio">
+    <div class="panel">
+      <div class="panel-head"><h3>益生菌板块 · 群落总览</h3><span class="hint">菌株原料 + 微生态制剂 + 益生元 + 乳品/饮料应用</span></div>
+      <div class="eco-note" id="probioIntro"></div>
+    </div>
+    <div class="sum-grid" id="probioSummary"></div>
+    <div class="panel">
+      <div class="panel-head"><h3>板块生态图谱</h3><span class="hint" id="probioAtlasHint"></span></div>
+      <div class="legend-inline" style="margin-bottom:8px">
+        <span><i style="border-top-style:solid;border-color:#58c8f0"></i>菌株/益生元供应（交叉喂养）</span>
+        <span><i style="border-top-style:dashed;border-color:#f0a048"></i>竞争（生态位重叠）</span>
+        <span>节点大小 = 关系度（生态位宽度）</span>
+      </div>
+      <div class="chart-box tall" id="probioAtlas"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>群落动力学模型（贝叶斯 gLV）</h3>
+        <span class="hint">在线采集板块行情 → 绝对定量/CLR → gLV/VAR/Lasso/BMA 集成</span>
+        <button class="btn" id="probioRun" style="margin-left:auto">拟合板块群落</button></div>
+    </div>
+    <div class="sum-grid" id="probioCommSummary"></div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h3>物种交互网络</h3><span class="hint">青=促进，橙=抑制，粗细=强度</span></div>
+        <div class="chart-box" id="probioNet" style="min-height:420px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>gLV 交互系数矩阵</h3><span class="hint">行=受作用物种，列=作用来源</span></div>
+        <div class="chart-box" id="probioHeat" style="min-height:420px"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>板块指数演替</h3><span class="hint">把板块内物种视为一个「菌群聚集体」的等权净值演化</span></div>
+      <div class="chart-box" id="probioIndex" style="min-height:280px"></div>
+    </div>
+  </section>
+
+  <!-- ===== 视图5：多公司关系工作台 ===== -->
+  <section class="view" id="view-compare">
+    <div class="panel">
+      <div class="panel-head"><h3>自定义公司群落 · 多公司 gLV 关系分析</h3>
+        <span class="hint">搜索并添加 2~10 家公司，拟合它们之间的相互作用；支持沿时间轴回放关系演变</span></div>
+      <div class="cmp-picker">
+        <div class="search-wrap cmp-search">
+          <input id="cmpInput" placeholder="输入公司名 / 代码添加，如 比亚迪、002594、600519" autocomplete="off">
+          <div class="search-dropdown" id="cmpDropdown"></div>
+        </div>
+        <button class="btn" id="cmpRun">拟合关系</button>
+        <button class="btn ghost" id="cmpClear">清空</button>
+      </div>
+      <div class="cmp-chain-add" id="cmpChainAdd"></div>
+      <div class="cmp-picked" id="cmpPicked"></div>
+    </div>
+
+    <div class="panel cmp-console" id="cmpConsole" style="display:none">
+      <div class="ctrl-row" style="flex-wrap:wrap">
+        <span class="ctrl-label">滚动窗口</span>
+        <div class="seg" id="cmpWinSeg">
+          <button data-w="60">60日</button><button data-w="90" class="on">90日</button><button data-w="120">120日</button>
+        </div>
+        <span class="ctrl-label" style="margin-left:8px">步长</span>
+        <div class="seg" id="cmpStepSeg">
+          <button data-s="10" class="on">10日</button><button data-s="20">20日</button>
+        </div>
+        <span class="ctrl-label" style="margin-left:8px">关系</span>
+        <div class="seg" id="cmpRelSeg">
+          <button data-r="all" class="on">全部</button><button data-r="pos">仅促进</button><button data-r="neg">仅抑制</button>
+        </div>
+        <button class="btn ghost" id="cmpPlay" style="margin-left:auto">▶ 播放演变</button>
+      </div>
+      <div class="cmp-timeline">
+        <input type="range" id="cmpRange" min="0" max="0" value="0" step="1">
+        <div class="cmp-win-date" id="cmpWinDate"></div>
+      </div>
+    </div>
+
+    <div class="sum-grid" id="cmpSummary"></div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head"><h3>关系网络（当前时间窗）</h3><span class="hint">青实线=促进，橙虚线=抑制，粗细=作用强度，方向 来源→受作用</span></div>
+        <div class="chart-box" id="cmpNetChart" style="min-height:440px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>gLV 关系矩阵（当前时间窗）</h3><span class="hint">行=受作用，列=来源；点单元格可在下方锁定该对关系的时间曲线</span></div>
+        <div class="tbl-wrap cmp-matrix-wrap"><table class="cmp-matrix" id="cmpMatrix"></table></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>成对关系强度的时间轴演变</h3><span class="hint" id="cmpTrendHint">默认展示全样本最强的若干对；竖线为当前时间窗</span></div>
+      <div class="chart-box" id="cmpTrendChart" style="min-height:380px"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>当前时间窗 · 关系明细表</h3><span class="hint">对比当前窗与全样本系数，Δ 为关系近期变化（正=转强促进/减弱抑制）</span></div>
+      <div class="tbl-wrap"><table class="data-tbl" id="cmpTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ===== 视图4：方法学 ===== -->
+  <section class="view" id="view-method">
+    <div class="panel">
+      <div class="panel-head"><h3>为什么用肠道菌群生态学解释股价</h3></div>
+      <div class="eco-note" id="methodIntro"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>微生物生态 → 产业金融 概念映射</h3></div>
+      <div class="tbl-wrap">
+        <table class="data-tbl map-tbl" id="mapTable"></table>
+      </div>
+    </div>
+    <div class="method-grid" id="methodGrid"></div>
+    <div class="panel">
+      <div class="panel-head"><h3>数据来源与边界说明</h3></div>
+      <div class="eco-note" id="methodDisclaimer" style="line-height:2"></div>
+    </div>
+  </section>
+</main>
+
+<div class="loading-mask" id="loadingMask"><div class="spinner"></div><div class="lt" id="loadingTxt">加载中</div><div class="progress-line"><i id="loadingBar"></i></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ================================================================
+ * U：数学与矩阵工具（Cholesky 求解对称正定系统，供贝叶斯回归）
+ * ================================================================ */
+const U={
+  mean:a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0,
+  sum:a=>a.reduce((s,x)=>s+x,0),
+  std:a=>{if(a.length<2)return 0;const m=U.mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1));},
+  last:(a,n=1)=>a[a.length-n],
+  range:n=>Array.from({length:n},(_,i)=>i),
+  clamp:(x,a,b)=>Math.max(a,Math.min(b,x)),
+  fmt:(x,d=2)=>(x===null||x===undefined||isNaN(x))?'--':Number(x).toFixed(d),
+  zscore(a){const m=U.mean(a),s=U.std(a)||1;return a.map(x=>(x-m)/s);},
+  // Cholesky 分解（对称正定）
+  chol(A){
+    const n=A.length,L=Array.from({length:n},()=>new Array(n).fill(0));
+    for(let i=0;i<n;i++)for(let j=0;j<=i;j++){
+      let s=A[i][j];for(let k=0;k<j;k++)s-=L[i][k]*L[j][k];
+      if(i===j)L[i][j]=Math.sqrt(Math.max(s,1e-10));else L[i][j]=s/L[j][j];
+    }
+    return L;
+  },
+  // L y=b 前代；L^T x=y 回代
+  solveChol(L,b){
+    const n=L.length,y=new Array(n),x=new Array(n);
+    for(let i=0;i<n;i++){let s=b[i];for(let k=0;k<i;k++)s-=L[i][k]*y[k];y[i]=s/L[i][i];}
+    for(let i=n-1;i>=0;i--){let s=y[i];for(let k=i+1;k<n;k++)s-=L[k][i]*x[k];x[i]=s/L[i][i];}
+    return x;
+  },
+  // 求解 A x = B（A 对称正定，B 为多右端列数组的数组）
+  solveSPDMulti(A,Bm){
+    const L=U.chol(A);return Bm.map(b=>U.solveChol(L,b));
+  },
+  // 正定矩阵对角元（后验方差）：diag(A^-1)
+  diagInvSPD(A){
+    const n=A.length,L=U.chol(A),invL=Array.from({length:n},()=>new Array(n).fill(0));
+    for(let j=0;j<n;j++){ // 解 L c = e_j 得 L^-1 列
+      for(let i=0;i<n;i++){
+        let v=i===j?1:0;for(let k=0;k<i;k++)v-=L[i][k]*invL[k][j];invL[i][j]=v/L[i][i];
+      }
+    }
+    return U.range(n).map(i=>U.range(n).reduce((s,k)=>s+invL[i][k]**2,0));
+  },
+  pearson(a,b){
+    const n=Math.min(a.length,b.length);if(n<4)return 0;
+    const ma=U.mean(a),mb=U.mean(b);let cov=0,va=0,vb=0;
+    for(let i=0;i<n;i++){const x=a[i]-ma,y=b[i]-mb;cov+=x*y;va+=x*x;vb+=y*y;}
+    return va>0&&vb>0?cov/Math.sqrt(va*vb):0;
+  },
+  spearman(a,b){ // 秩相关
+    const rank=x=>{const idx=U.range(x.length).sort((i,j)=>x[i]-x[j]),r=new Array(x.length);
+      idx.forEach((o,i)=>r[o]=i);return r;};
+    return U.pearson(rank(a),rank(b));
+  }
+};
+/* ================================================================
+ * GRAPH：产业链「物种」图谱（节点 70 家上市公司 · 关系边 60 条）
+ *   node = [symbol, 名称, 行业key, 生态角色]
+ *   edge = [source, target, rel(up=供应链/compete=竞争), 先验强度1-3, 描述]
+ * ================================================================ */
+const INDUSTRY={
+  wind:{name:'风电产业链',color:'#58c8f0',alias:['风电','风机','海风','风电整机','风力发电']},
+  ev:{name:'锂电与新能源车',color:'#f0a048',alias:['锂电','锂电池','新能源车','新能源汽车','电动车','电池','动力电池','储能']},
+  pv:{name:'光伏产业链',color:'#e6b34d',alias:['光伏','太阳能','硅料','组件','光伏产业链']},
+  semi:{name:'半导体',color:'#c98bf2',alias:['半导体','芯片','集成电路','ic','晶圆','算力芯片']},
+  food:{name:'食品饮料',color:'#8bc46b',alias:['食品','饮料','白酒','消费','食品饮料']},
+  med:{name:'医药生物',color:'#5fd0b0',alias:['医药','医疗','生物医药','创新药','医疗器械','cxo']},
+  fin:{name:'金融',color:'#7c9cf2',alias:['金融','银行','保险','券商','证券']},
+  tel:{name:'通信算力',color:'#f2789c',alias:['通信','算力','光模块','运营商','ai算力','数据']},
+  mat:{name:'资源与高端装备',color:'#c9a06a',alias:['资源','材料','有色','钢铁','高端装备','机械','化工']},
+  foodhealth:{name:'食品大健康',color:'#9fe870',alias:['大健康','营养','保健','功能食品','乳品','健康食品','膳食','奶酪']},
+  probio:{name:'益生菌',color:'#3cc6c0',alias:['益生菌','益生元','微生态','乳酸菌','肠道菌','发酵','菌株']}
+};
+const NODES=[
+  ['sh601615','明阳智能','wind','mid'],['sz002202','金风科技','wind','mid'],['sh688349','三一重能','wind','mid'],
+  ['sz300772','运达股份','wind','mid'],['sz002531','天顺风能','wind','up'],['sz002487','大金重工','wind','up'],
+  ['sh603606','东方电缆','wind','up'],['sh603218','日月股份','wind','up'],['sz002080','中材科技','wind','up'],
+  ['sh600905','三峡能源','wind','down'],['sz001289','龙源电力','wind','down'],
+  ['sz300750','宁德时代','ev','mid'],['sz300014','亿纬锂能','ev','mid'],['sz002460','赣锋锂业','ev','up'],
+  ['sz002466','天齐锂业','ev','up'],['sz300769','德方纳米','ev','up'],['sz002812','恩捷股份','ev','up'],
+  ['sz002594','比亚迪','ev','mid'],['sh601127','赛力斯','ev','mid'],['sz000625','长安汽车','ev','mid'],
+  ['sh601689','拓普集团','ev','up'],['sz002050','三花智控','ev','up'],
+  ['sh601012','隆基绿能','pv','mid'],['sh688599','天合光能','pv','mid'],['sz300274','阳光电源','pv','up'],
+  ['sh600438','通威股份','pv','up'],['sz002129','TCL中环','pv','up'],['sh688223','晶科能源','pv','mid'],['sz300763','锦浪科技','pv','up'],
+  ['sh688981','中芯国际','semi','mid'],['sh688256','寒武纪','semi','mid'],['sh688041','海光信息','semi','mid'],
+  ['sh603501','韦尔股份','semi','mid'],['sz002371','北方华创','semi','up'],['sh688012','中微公司','semi','up'],
+  ['sh603986','兆易创新','semi','mid'],['sz002475','立讯精密','semi','up'],
+  ['sh600519','贵州茅台','food','mid'],['sz000858','五粮液','food','mid'],['sz000568','泸州老窖','food','mid'],
+  ['sh600887','伊利股份','food','mid'],['sh603288','海天味业','food','mid'],
+  ['sh600276','恒瑞医药','med','mid'],['sz300760','迈瑞医疗','med','up'],['sz000538','云南白药','med','mid'],
+  ['sh600436','片仔癀','med','mid'],['sz300015','爱尔眼科','med','down'],['sh603259','药明康德','med','up'],['sz300759','康龙化成','med','up'],
+  ['sh600036','招商银行','fin','mid'],['sh601398','工商银行','fin','mid'],['sh601166','兴业银行','fin','mid'],
+  ['sh601318','中国平安','fin','mid'],['sh600030','中信证券','fin','mid'],['sz300059','东方财富','fin','mid'],
+  ['sz300308','中际旭创','tel','up'],['sz000063','中兴通讯','tel','mid'],['sh600522','中天科技','tel','up'],
+  ['sh600050','中国联通','tel','down'],['sh601728','中国电信','tel','down'],['sz002230','科大讯飞','tel','mid'],['sh688111','金山办公','tel','mid'],
+  ['sh601899','紫金矿业','mat','mid'],['sh603993','洛阳钼业','mat','mid'],['sh600309','万华化学','mat','mid'],
+  ['sh600028','中国石化','mat','up'],['sh600031','三一重工','mat','mid'],['sz000157','中联重科','mat','mid'],
+  ['sz002179','中航光电','mat','up'],['sh600760','中航沈飞','mat','mid'],
+  ['sz300146','汤臣倍健','foodhealth','mid'],['sh600298','安琪酵母','foodhealth','mid'],
+  ['sh605499','东鹏饮料','foodhealth','mid'],['sh600597','光明乳业','foodhealth','mid'],
+  ['sh600882','妙可蓝多','foodhealth','mid'],['sz002570','贝因美','foodhealth','mid'],
+  ['sz002557','洽洽食品','foodhealth','mid'],['sz300999','金龙鱼','foodhealth','up'],
+  ['sz300791','仙乐健康','foodhealth','up'],['sz002626','金达威','foodhealth','up'],
+  ['sh600530','交大昂立','foodhealth','mid'],['sh600305','恒顺醋业','foodhealth','mid'],
+  ['sz300858','科拓生物','probio','mid'],['sh603739','蔚蓝生物','probio','mid'],
+  ['sh605016','百龙创园','probio','up'],['sz002286','保龄宝','probio','up'],
+  ['sh688089','嘉必优','probio','up'],['sh605388','均瑶健康','probio','down'],
+  ['sz002732','燕塘乳业','probio','mid'],['sz002946','新乳业','probio','mid'],
+  ['sh600429','三元股份','probio','mid'],['sh600419','天润乳业','probio','mid']
+];
+const EDGES=[
+  ['sz002531','sh601615','up',2,'塔筒供应'],['sz002531','sz002202','up',2,'塔筒供应'],['sz002487','sh601615','up',2,'桩基塔筒'],
+  ['sh603606','sh601615','up',3,'海底电缆'],['sh603218','sh688349','up',2,'铸件供应'],['sh603218','sh601615','up',2,'铸件供应'],
+  ['sz002080','sh601615','up',2,'叶片供应'],['sz002080','sz002202','up',2,'叶片供应'],
+  ['sh601615','sh600905','up',2,'风电机组交付'],['sz002202','sz001289','up',2,'风电机组交付'],
+  ['sh601615','sz002202','compete',3,'风机总装竞争'],['sh601615','sh688349','compete',3,'风机总装竞争'],
+  ['sz002202','sz300772','compete',2,'风机总装竞争'],['sh688349','sz300772','compete',2,'风机总装竞争'],
+  ['sz002460','sz300750','up',3,'锂盐供应'],['sz002466','sz300750','up',3,'锂盐供应'],['sz300769','sz300750','up',2,'正极材料'],
+  ['sz002812','sz300750','up',3,'隔膜供应'],['sz002812','sz300014','up',2,'隔膜供应'],
+  ['sz300750','sz002594','up',3,'动力电池'],['sz300750','sh601127','up',3,'动力电池'],['sz002460','sz002594','up',2,'锂盐供应'],
+  ['sh601689','sh601127','up',2,'底盘部件'],['sh601689','sz002594','up',2,'底盘部件'],['sz002050','sz002594','up',2,'热管理部件'],
+  ['sz300750','sz300014','compete',3,'动力电池竞争'],['sz002460','sz002466','compete',3,'锂盐资源竞争'],
+  ['sz002594','sz000625','compete',2,'整车竞争'],['sh601127','sz000625','compete',2,'整车竞争'],
+  ['sh600438','sz002129','up',3,'硅料供应'],['sz002129','sh601012','up',3,'硅片供应'],['sh600438','sh688599','up',3,'硅料供应'],
+  ['sh601012','sh688599','compete',3,'组件竞争'],['sh601012','sh688223','compete',3,'组件竞争'],['sh688599','sh688223','compete',2,'组件竞争'],
+  ['sz300274','sz300763','compete',2,'逆变器竞争'],
+  ['sz002371','sh688981','up',3,'薄膜刻蚀设备'],['sh688012','sh688981','up',3,'刻蚀设备'],
+  ['sh688981','sh603501','up',2,'晶圆代工'],['sh688981','sh603986','up',2,'晶圆代工'],['sz002475','sh603501','up',1,'封装配套'],
+  ['sh688256','sh688041','compete',3,'AI/处理器竞争'],['sz002371','sh688012','compete',3,'半导体设备竞争'],
+  ['sh600519','sz000858','compete',3,'高端白酒竞争'],['sz000858','sz000568','compete',3,'白酒竞争'],['sh600519','sz000568','compete',2,'白酒竞争'],
+  ['sh603259','sh600276','up',3,'CXO研发生产'],['sz300759','sh600276','up',2,'CXO研发生产'],['sz300760','sz300015','up',2,'医疗设备供应'],
+  ['sh600276','sh600436','compete',1,'品牌中药/创新药'],['sz000538','sh600436','compete',1,'中药品牌竞争'],
+  ['sh600036','sh601398','compete',2,'零售银行竞争'],['sh600036','sh601166','compete',2,'股份行竞争'],['sh601398','sh601166','compete',2,'银行竞争'],
+  ['sh600030','sz300059','compete',2,'券商业务竞争'],['sh601318','sh600036','compete',1,'综合金融竞争'],
+  ['sh600522','sz000063','up',2,'光缆供应'],['sz300308','sz000063','up',3,'光模块供应'],
+  ['sz000063','sh601728','up',2,'网络设备'],['sz000063','sh600050','up',2,'网络设备'],['sh601728','sh600050','compete',3,'运营商竞争'],
+  ['sz002230','sh688111','compete',1,'AI办公场景'],
+  ['sh601899','sh603993','compete',3,'铜钼资源竞争'],['sh600028','sh600309','up',2,'石化原料'],
+  ['sh600031','sz000157','compete',3,'工程机械竞争'],['sz002179','sh600760','up',3,'机载连接器'],['sh601899','sz002179','up',1,'铜材供应'],
+  ['sz002626','sz300146','up',3,'营养原料(辅酶Q10/维生素)'],['sz002626','sz300791','up',2,'营养原料供应'],
+  ['sz300791','sz300146','up',2,'保健食品代工'],['sh600298','sh600597','up',2,'发酵剂供应'],
+  ['sh600298','sh600882','up',2,'发酵剂供应'],['sz300999','sz002557','up',1,'食用油脂供应'],
+  ['sz300146','sh600530','compete',3,'保健食品竞争'],['sz300146','sz300791','compete',2,'品牌/代工竞争'],
+  ['sh600597','sz002570','compete',2,'乳品/婴童营养竞争'],['sh600597','sh600882','compete',2,'乳品竞争'],
+  ['sz300858','sh605388','up',3,'益生菌菌株供应'],['sz300858','sz002732','up',2,'益生菌菌株供应'],
+  ['sz300858','sz002946','up',2,'益生菌菌株供应'],['sz300858','sh600429','up',2,'益生菌菌株供应'],
+  ['sz300858','sh600419','up',1,'益生菌菌株供应'],['sh605016','sh605388','up',2,'益生元供应'],
+  ['sh605016','sz002732','up',1,'益生元供应'],['sz002286','sh605388','up',2,'低聚糖/益生元供应'],
+  ['sz002286','sh600429','up',1,'益生元供应'],['sh688089','sh600429','up',2,'婴配粉营养素供应'],
+  ['sh603739','sh600419','up',1,'微生态制剂/酶制剂供应'],
+  ['sz300858','sh603739','compete',3,'微生态制剂/益生菌原料竞争'],['sh605016','sz002286','compete',3,'益生元/功能糖竞争'],
+  ['sz002732','sz002946','compete',2,'区域乳品竞争'],['sz002946','sh600429','compete',2,'乳品竞争'],
+  ['sz002732','sh600419','compete',1,'乳品竞争']
+];
+const NODE_MAP=Object.fromEntries(NODES.map(n=>[n[0],{symbol:n[0],name:n[1],ind:n[2],role:n[3]}]));
+// 图谱邻居（含关系方向）
+function neighborsOf(sym){
+  const out=[];
+  EDGES.forEach(e=>{
+    if(e[0]===sym)out.push({other:e[1],dir:'out',rel:e[2],strength:e[3],desc:e[4]});
+    else if(e[1]===sym)out.push({other:e[0],dir:'in',rel:e[2],strength:e[3],desc:e[4]});
+  });
+  return out;
+}
+/* ================================================================
+ * EMBEDDED_SERIES：12 只核心产业链个股真实前复权日K（离线演示群落）
+ *   [date, close, vol(手)]
+ * ================================================================ */
+const EMBEDDED_SERIES={"sh601615":[["2025-11-27",13.063,199879],["2025-11-28",13.393,319499],["2025-12-01",13.163,333388],["2025-12-02",13.093,199163],["2025-12-03",13.113,412658],["2025-12-04",13.013,254515],["2025-12-05",13.523,534424],["2025-12-08",13.513,365912],["2025-12-09",13.263,225334],["2025-12-10",13.223,241049],["2025-12-11",13.433,529040],["2025-12-12",13.423,292739],["2025-12-15",13.473,313705],["2025-12-16",13.853,736188],["2025-12-17",13.763,785354],["2025-12-18",13.593,326147],["2025-12-19",13.673,314238],["2025-12-22",13.793,325958],["2025-12-23",14.123,568026],["2025-12-24",14.333,353725],["2025-12-25",14.543,348024],["2025-12-26",14.553,496135],["2025-12-29",14.593,636138],["2025-12-30",14.173,405247],["2025-12-31",14.303,360592],["2026-01-05",14.553,497437],["2026-01-06",16.023,1205992],["2026-01-07",16.523,1139220],["2026-01-08",16.573,820496],["2026-01-09",17.713,2340630],["2026-01-12",19.503,1125040],["2026-01-23",21.473,169954],["2026-01-26",23.643,119531],["2026-01-27",25.023,3320970],["2026-01-28",24.703,1848020],["2026-01-29",23.593,1596297],["2026-01-30",23.023,1963604],["2026-02-02",23.683,1461512],["2026-02-03",25.503,1670748],["2026-02-04",25.673,1339748],["2026-02-05",23.093,1135566],["2026-02-06",24.023,1227027],["2026-02-09",25.423,1635886],["2026-02-10",24.313,1402914],["2026-02-11",23.773,895095],["2026-02-12",23.123,596192],["2026-02-13",22.243,1022086],["2026-02-24",22.093,764696],["2026-02-25",21.983,620454],["2026-02-26",22.773,758560],["2026-02-27",22.743,1028769],["2026-03-02",21.703,830063],["2026-03-03",19.513,1272691],["2026-03-04",19.603,646630],["2026-03-05",19.923,525704],["2026-03-06",20.053,432673],["2026-03-09",20.533,667258],["2026-03-10",21.023,640892],["2026-03-11",20.863,487586],["2026-03-12",21.853,1178727],["2026-03-13",21.973,1466965],["2026-03-16",20.903,1090542],["2026-03-17",20.503,747349],["2026-03-18",20.343,637195],["2026-03-19",19.333,822668],["2026-03-20",19.403,751326],["2026-03-23",19.503,864217],["2026-03-24",19.543,909490],["2026-03-25",19.073,808510],["2026-03-26",17.163,1686311],["2026-03-27",17.083,1109570],["2026-03-30",17.023,835202],["2026-03-31",16.793,698546],["2026-04-01",16.673,720370],["2026-04-02",16.243,638561],["2026-04-03",15.693,632070],["2026-04-07",15.383,636377],["2026-04-08",16.223,869726],["2026-04-09",16.153,726875],["2026-04-10",16.373,720740],["2026-04-13",16.183,633184],["2026-04-14",16.523,849490],["2026-04-15",16.313,701938],["2026-04-16",16.343,587505],["2026-04-17",16.753,968282],["2026-04-20",17.123,1143582],["2026-04-21",17.023,730776],["2026-04-22",17.133,700356],["2026-04-23",16.503,997805],["2026-04-24",16.013,832073],["2026-04-27",15.843,757142],["2026-04-28",15.243,980530],["2026-04-29",15.033,1185895],["2026-04-30",15.663,1031125],["2026-05-06",15.663,766677],["2026-05-07",15.763,749199],["2026-05-08",16.483,1290387],["2026-05-11",16.953,1333553],["2026-05-12",16.253,968678],["2026-05-13",16.423,962112],["2026-05-14",15.623,770183],["2026-05-15",15.143,798474],["2026-05-18",16.003,1228110],["2026-05-19",16.693,1294534],["2026-05-20",16.273,806577],["2026-05-21",16.513,1592518],["2026-05-22",16.613,1178631],["2026-05-25",17.353,1870159],["2026-05-26",18.523,2717244],["2026-05-27",17.553,2165844],["2026-05-28",17.423,1420044],["2026-05-29",16.353,1521163],["2026-06-01",15.993,1058794],["2026-06-02",14.963,1190371],["2026-06-03",14.703,836009],["2026-06-04",14.433,789768],["2026-06-05",13.903,961489],["2026-06-08",12.933,901252],["2026-06-09",12.753,868358],["2026-06-10",11.923,1305956],["2026-06-11",11.933,1136114],["2026-06-12",11.933,924037],["2026-06-15",12.193,726097],["2026-06-16",12.483,877016],["2026-06-17",12.153,670067],["2026-06-18",12.053,720571],["2026-06-22",12.433,762295],["2026-06-23",11.743,781951],["2026-06-24",11.753,506793],["2026-06-25",11.563,605973],["2026-06-26",11.213,829294],["2026-06-29",11.093,761671],["2026-06-30",11.393,678276],["2026-07-01",11.393,884546],["2026-07-02",10.983,671997],["2026-07-03",11.623,985668],["2026-07-06",11.153,674211],["2026-07-07",10.573,685054],["2026-07-08",10.43,483410],["2026-07-09",10.6,661251],["2026-07-10",11.37,1332253],["2026-07-13",10.35,879467],["2026-07-14",10.07,660931],["2026-07-15",10.22,680425],["2026-07-16",10.28,487596],["2026-07-17",10.19,832703],["2026-07-20",10.6,927197],["2026-07-21",11.08,716262],["2026-07-22",11.46,795972],["2026-07-23",11.26,672598],["2026-07-24",10.96,496918],["2026-07-27",11.2,418022],["2026-07-28",10.97,406572],["2026-07-29",11.27,572322],["2026-07-30",11.16,403328],["2026-07-31",11.15,474966],["2026-08-03",11.63,751160],["2026-08-04",11.64,528091],["2026-08-05",11.68,449852],["2026-08-06",11.48,471188],["2026-08-07",11.6,384262],["2026-08-10",11.69,390579],["2026-08-11",11.55,409962],["2026-08-12",11.9,475453],["2026-08-13",12.12,1023060],["2026-08-14",11.65,653608],["2026-08-17",11.64,391488],["2026-08-18",11.48,480696],["2026-08-19",10.78,596418],["2026-08-20",10.75,293125],["2026-08-21",10.95,370711],["2026-08-24",10.6,377567],["2026-08-25",10.82,308057],["2026-08-26",10.94,273885],["2026-08-27",10.85,294608],["2026-08-28",10.6,417232],["2026-08-31",10.63,312077],["2026-09-01",10.22,574954],["2026-09-02",9.98,400723],["2026-09-03",9.18,1183784]],"sz002202":[["2025-12-09",15.391,723725],["2025-12-10",15.241,518727],["2025-12-11",16.781,2424564],["2025-12-12",16.781,2644377],["2025-12-15",17.301,2574733],["2025-12-16",16.191,1721331],["2025-12-17",16.321,1101857],["2025-12-18",16.331,1223868],["2025-12-19",16.001,1242108],["2025-12-22",16.691,1594487],["2025-12-23",16.851,1943362],["2025-12-24",17.231,1523708],["2025-12-25",18.971,2665276],["2025-12-26",19.491,3506219],["2025-12-29",21.461,2203865],["2025-12-30",20.001,6827394],["2025-12-31",20.201,4279626],["2026-01-05",21.621,6487827],["2026-01-06",23.801,6176228],["2026-01-07",26.201,6801731],["2026-01-08",28.841,6081267],["2026-01-09",31.741,5632929],["2026-01-12",34.931,3796194],["2026-01-13",33.751,8963325],["2026-01-14",33.181,7550424],["2026-01-15",29.841,1807170],["2026-01-16",26.841,690435],["2026-01-19",27.501,7116452],["2026-01-20",25.861,4990954],["2026-01-21",25.251,3336930],["2026-01-22",26.691,4304908],["2026-01-23",29.381,3489662],["2026-01-26",28.201,5769714],["2026-01-27",28.391,3403807],["2026-01-28",27.511,3081180],["2026-01-29",26.701,2898894],["2026-01-30",25.911,2381310],["2026-02-02",25.431,2073522],["2026-02-03",26.961,3248801],["2026-02-04",27.081,2976868],["2026-02-05",24.621,3514464],["2026-02-06",25.311,2428441],["2026-02-09",25.991,2255275],["2026-02-10",25.471,1432205],["2026-02-11",25.261,1337457],["2026-02-12",24.931,1257804],["2026-02-13",24.701,1007794],["2026-02-24",25.881,2290205],["2026-02-25",27.061,2608005],["2026-02-26",28.181,3370775],["2026-02-27",28.251,2618153],["2026-03-02",27.911,3120822],["2026-03-03",26.131,2601843],["2026-03-04",26.811,2119125],["2026-03-05",27.801,2415127],["2026-03-06",28.271,2465203],["2026-03-09",28.271,1972762],["2026-03-10",28.281,2010059],["2026-03-11",30.041,4343929],["2026-03-12",31.091,4781429],["2026-03-13",31.231,3941956],["2026-03-16",30.811,4496377],["2026-03-17",28.351,3216179],["2026-03-18",30.801,4543151],["2026-03-19",29.611,3161139],["2026-03-20",29.001,2412637],["2026-03-23",27.211,2435664],["2026-03-24",27.381,2044648],["2026-03-25",28.111,1977758],["2026-03-26",27.931,2113751],["2026-03-27",27.251,1468402],["2026-03-30",27.521,1939899],["2026-03-31",26.101,2631421],["2026-04-01",25.221,2211044],["2026-04-02",23.811,2345841],["2026-04-03",24.021,2421140],["2026-04-07",22.691,2285768],["2026-04-08",23.641,2777689],["2026-04-09",23.641,2132337],["2026-04-10",23.871,2016803],["2026-04-13",23.941,1225553],["2026-04-14",25.101,2797037],["2026-04-15",24.821,2581314],["2026-04-16",24.791,1536268],["2026-04-17",25.191,1763846],["2026-04-20",26.391,2803097],["2026-04-21",25.931,1808333],["2026-04-22",26.031,1588431],["2026-04-23",25.501,1585717],["2026-04-24",25.281,1582156],["2026-04-27",26.331,2412312],["2026-04-28",25.311,1763623],["2026-04-29",25.531,1292192],["2026-04-30",27.351,3493626],["2026-05-06",27.741,3050494],["2026-05-07",28.261,2650063],["2026-05-08",28.291,2366480],["2026-05-11",27.961,2246451],["2026-05-12",27.071,1946375],["2026-05-13",27.601,1761552],["2026-05-14",25.831,2302553],["2026-05-15",24.891,1736128],["2026-05-18",25.591,1462306],["2026-05-19",25.221,1042342],["2026-05-20",25.101,1158381],["2026-05-21",24.531,1779915],["2026-05-22",25.001,1171680],["2026-05-25",24.681,1547898],["2026-05-26",24.311,1479360],["2026-05-27",23.401,1382654],["2026-05-28",24.101,1336150],["2026-05-29",23.221,1387422],["2026-06-01",23.261,1015201],["2026-06-02",23.041,1147135],["2026-06-03",23.411,1241902],["2026-06-04",23.431,791043],["2026-06-05",22.801,1164389],["2026-06-08",21.491,1211201],["2026-06-09",21.801,1018540],["2026-06-10",21.051,1053771],["2026-06-11",20.931,842004],["2026-06-12",21.231,1697071],["2026-06-15",21.141,1293343],["2026-06-16",21.571,1443310],["2026-06-17",21.781,1058409],["2026-06-18",22.291,1441352],["2026-06-22",22.741,1494541],["2026-06-23",21.551,1335052],["2026-06-24",22.001,1191123],["2026-06-25",21.701,1299602],["2026-06-26",23.131,3029974],["2026-06-29",21.531,2275479],["2026-06-30",23.701,2060240],["2026-07-01",24.461,3230984],["2026-07-02",23.311,2177889],["2026-07-03",24.391,2147252],["2026-07-06",23.711,1699005],["2026-07-07",21.991,1551794],["2026-07-08",20.841,1228579],["2026-07-09",20.131,1504076],["2026-07-10",22.161,2676621],["2026-07-13",20.071,1953213],["2026-07-14",18.971,1496265],["2026-07-15",18.681,849600],["2026-07-16",18.391,814783],["2026-07-17",16.811,1256735],["2026-07-20",16.831,1049471],["2026-07-21",17.351,1022635],["2026-07-22",17.311,922421],["2026-07-23",18.171,1217526],["2026-07-24",17.421,890913],["2026-07-27",17.951,753109],["2026-07-28",17.791,863133],["2026-07-29",17.881,758524],["2026-07-30",17.811,821684],["2026-07-31",18.191,965476],["2026-08-03",19.041,1444605],["2026-08-04",19.291,1275987],["2026-08-05",19.961,1405974],["2026-08-06",20.561,1757665],["2026-08-07",21.8,1943990],["2026-08-10",21.68,1852180],["2026-08-11",19.92,2266539],["2026-08-12",20.44,1335640],["2026-08-13",20.93,1498883],["2026-08-14",20.93,920121],["2026-08-17",21.76,1214202],["2026-08-18",22.01,1461523],["2026-08-19",22.03,4082222],["2026-08-20",19.84,2693746],["2026-08-21",19.19,1588410],["2026-08-24",18.3,1346046],["2026-08-25",18.46,811666],["2026-08-26",18.61,1013218],["2026-08-27",18.74,903370],["2026-08-28",18.41,841335],["2026-08-31",18.34,639341],["2026-09-01",18.19,664417],["2026-09-02",17.8,664213],["2026-09-03",17.7,558467]],"sz300772":[["2025-12-09",18.79,135608],["2025-12-10",18.12,149995],["2025-12-11",18.86,197960],["2025-12-12",18.76,128232],["2025-12-15",18.9,160304],["2025-12-16",18.49,89762],["2025-12-17",18.99,113459],["2025-12-18",18.72,74251],["2025-12-19",18.3,88610],["2025-12-22",18.38,118918],["2025-12-23",18.32,90831],["2025-12-24",18.65,99702],["2025-12-25",19.14,161924],["2025-12-26",19.07,100289],["2025-12-29",19.74,235935],["2025-12-30",19.34,177526],["2025-12-31",19.0,87962],["2026-01-05",19.74,180851],["2026-01-06",20.06,165125],["2026-01-07",19.93,132319],["2026-01-08",19.97,173510],["2026-01-09",20.04,189646],["2026-01-12",20.5,152529],["2026-01-13",19.4,264490],["2026-01-14",18.87,228555],["2026-01-15",19.24,141272],["2026-01-16",19.43,113535],["2026-01-19",19.78,126707],["2026-01-20",19.64,109050],["2026-01-21",19.44,116371],["2026-01-22",19.6,102594],["2026-01-23",20.24,150021],["2026-01-26",21.41,331934],["2026-01-27",21.27,178942],["2026-01-28",21.16,171602],["2026-01-29",20.79,134236],["2026-01-30",19.4,182297],["2026-02-02",18.13,205041],["2026-02-03",18.42,134838],["2026-02-04",18.27,108000],["2026-02-05",17.94,220832],["2026-02-06",18.53,194575],["2026-02-09",18.65,115718],["2026-02-10",18.8,70040],["2026-02-11",19.19,99354],["2026-02-12",18.86,76196],["2026-02-13",18.74,83522],["2026-02-24",18.94,65920],["2026-02-25",18.85,113215],["2026-02-26",20.07,158950],["2026-02-27",20.02,85903],["2026-03-02",19.38,104353],["2026-03-03",18.84,109471],["2026-03-04",18.85,100040],["2026-03-05",19.43,120431],["2026-03-06",19.7,125890],["2026-03-09",19.78,166823],["2026-03-10",19.86,94765],["2026-03-11",20.72,198625],["2026-03-12",21.44,337401],["2026-03-13",20.91,340896],["2026-03-16",20.12,255082],["2026-03-17",19.97,179116],["2026-03-18",19.58,147388],["2026-03-19",19.17,142123],["2026-03-20",19.38,175288],["2026-03-23",18.86,206706],["2026-03-24",18.65,442817],["2026-03-25",19.23,234469],["2026-03-26",19.05,196726],["2026-03-27",18.95,129872],["2026-03-30",19.52,228927],["2026-03-31",18.99,186009],["2026-04-01",18.88,150218],["2026-04-02",18.96,255515],["2026-04-03",17.7,273609],["2026-04-07",16.96,168382],["2026-04-08",17.14,239935],["2026-04-09",16.97,275621],["2026-04-10",16.84,257159],["2026-04-13",17.11,230070],["2026-04-14",16.94,262657],["2026-04-15",15.91,468027],["2026-04-16",15.98,250063],["2026-04-17",16.4,281331],["2026-04-20",16.44,235101],["2026-04-21",16.23,131465],["2026-04-22",16.37,153166],["2026-04-23",16.31,174988],["2026-04-24",15.82,191692],["2026-04-27",15.97,453429],["2026-04-28",15.81,259499],["2026-04-29",15.97,178992],["2026-04-30",16.16,231521],["2026-05-06",16.76,305255],["2026-05-07",16.82,202537],["2026-05-08",16.94,175804],["2026-05-11",16.65,344782],["2026-05-12",16.53,251770],["2026-05-13",16.89,233208],["2026-05-14",16.4,228062],["2026-05-15",15.94,231515],["2026-05-18",16.31,207470],["2026-05-19",16.86,270541],["2026-05-20",16.49,157746],["2026-05-21",15.86,206837],["2026-05-22",16.09,144610],["2026-05-25",15.87,159515],["2026-05-26",16.08,279984],["2026-05-27",15.84,197881],["2026-05-28",15.81,131746],["2026-05-29",15.04,185054],["2026-06-01",15.11,125778],["2026-06-02",14.29,193811],["2026-06-03",13.94,185795],["2026-06-04",13.52,187705],["2026-06-05",13.36,205195],["2026-06-08",12.63,238859],["2026-06-09",12.72,160661],["2026-06-10",12.52,176016],["2026-06-11",12.32,126844],["2026-06-12",12.49,157599],["2026-06-15",12.68,184809],["2026-06-16",12.72,183461],["2026-06-17",12.31,165705],["2026-06-18",12.06,157304],["2026-06-22",12.15,166360],["2026-06-23",11.88,138918],["2026-06-24",11.73,118338],["2026-06-25",11.41,257877],["2026-06-26",11.69,341117],["2026-06-29",11.79,251385],["2026-06-30",12.24,287644],["2026-07-01",12.13,276155],["2026-07-02",11.95,221217],["2026-07-03",12.13,220757],["2026-07-06",11.89,182618],["2026-07-07",11.45,134927],["2026-07-08",11.11,151236],["2026-07-09",11.05,138360],["2026-07-10",11.37,200562],["2026-07-13",10.6,237168],["2026-07-14",10.63,137881],["2026-07-15",10.78,122149],["2026-07-16",10.82,122800],["2026-07-17",10.82,157529],["2026-07-20",11.03,232169],["2026-07-21",11.07,218246],["2026-07-22",11.02,157551],["2026-07-23",11.42,213400],["2026-07-24",11.16,182547],["2026-07-27",11.58,175016],["2026-07-28",11.51,165627],["2026-07-29",11.71,175500],["2026-07-30",11.79,167068],["2026-07-31",11.79,199285],["2026-08-03",12.78,421210],["2026-08-04",12.69,235292],["2026-08-05",12.9,185186],["2026-08-06",12.61,180903],["2026-08-07",12.53,163819],["2026-08-10",12.48,112918],["2026-08-11",12.3,112764],["2026-08-12",12.54,126338],["2026-08-13",12.4,117127],["2026-08-14",12.06,139653],["2026-08-17",12.22,103462],["2026-08-18",11.99,113901],["2026-08-19",11.47,137545],["2026-08-20",11.34,99646],["2026-08-21",11.33,67058],["2026-08-24",10.94,122046],["2026-08-25",11.01,106671],["2026-08-26",11.08,109799],["2026-08-27",11.09,111750],["2026-08-28",9.77,463359],["2026-08-31",9.54,304716],["2026-09-01",9.53,180066],["2026-09-02",9.27,164839],["2026-09-03",9.21,122256]],"sh603606":[["2025-12-09",48.013,45154],["2025-12-10",47.896,62366],["2025-12-11",48.113,55710],["2025-12-12",49.647,70063],["2025-12-15",50.131,70826],["2025-12-16",50.006,58354],["2025-12-17",50.206,53308],["2025-12-18",49.214,40366],["2025-12-19",48.913,44042],["2025-12-22",51.648,159897],["2025-12-23",52.224,96440],["2025-12-24",51.031,81123],["2025-12-25",52.065,68717],["2025-12-26",51.073,74127],["2025-12-29",51.273,51785],["2025-12-30",50.79,40822],["2025-12-31",49.355,79102],["2026-01-05",49.714,78283],["2026-01-06",50.114,73182],["2026-01-07",48.663,105303],["2026-01-08",49.055,66089],["2026-01-09",50.314,91618],["2026-01-12",49.064,124240],["2026-01-13",49.105,117438],["2026-01-14",48.622,113082],["2026-01-15",49.989,168443],["2026-01-16",47.763,241941],["2026-01-19",48.93,233611],["2026-01-20",47.429,221519],["2026-01-21",47.863,145512],["2026-01-22",48.371,90813],["2026-01-23",49.197,122577],["2026-01-26",48.346,118602],["2026-01-27",50.498,219855],["2026-01-28",48.938,186259],["2026-01-29",47.563,105315],["2026-01-30",45.745,175615],["2026-02-02",44.452,136730],["2026-02-03",45.695,91863],["2026-02-04",46.479,97962],["2026-02-05",45.978,77751],["2026-02-06",46.229,68791],["2026-02-09",47.504,80030],["2026-02-10",47.071,60476],["2026-02-11",47.212,52028],["2026-02-12",46.846,62399],["2026-02-13",46.279,59527],["2026-02-24",47.663,90533],["2026-02-25",47.704,69508],["2026-02-26",49.814,185419],["2026-02-27",48.897,76875],["2026-03-02",48.905,109751],["2026-03-03",49.139,144785],["2026-03-04",49.897,140174],["2026-03-05",50.564,183769],["2026-03-06",50.189,104965],["2026-03-09",50.648,179709],["2026-03-10",52.641,177601],["2026-03-11",52.632,148834],["2026-03-12",54.85,276792],["2026-03-13",55.567,287318],["2026-03-16",55.334,209866],["2026-03-17",55.025,192798],["2026-03-18",53.541,180521],["2026-03-19",52.849,133722],["2026-03-20",53.133,139721],["2026-03-23",51.899,138467],["2026-03-24",51.907,106383],["2026-03-25",52.499,91815],["2026-03-26",48.271,278234],["2026-03-27",47.688,203072],["2026-03-30",50.481,221748],["2026-03-31",50.014,112049],["2026-04-01",50.614,93703],["2026-04-02",50.256,97637],["2026-04-03",48.055,95783],["2026-04-07",48.321,74455],["2026-04-08",49.564,112130],["2026-04-09",47.846,196957],["2026-04-10",47.98,117294],["2026-04-13",48.23,83108],["2026-04-14",48.963,94942],["2026-04-15",48.897,80327],["2026-04-16",49.264,87295],["2026-04-17",49.606,99904],["2026-04-20",50.398,137084],["2026-04-21",50.473,112775],["2026-04-22",55.567,213381],["2026-04-23",54.492,341253],["2026-04-24",53.933,169811],["2026-04-27",52.991,189085],["2026-04-28",51.357,129683],["2026-04-29",52.39,132680],["2026-04-30",51.34,151604],["2026-05-06",51.565,161662],["2026-05-07",52.057,127910],["2026-05-08",50.973,167148],["2026-05-11",51.198,155060],["2026-05-12",51.29,200475],["2026-05-13",52.899,217305],["2026-05-14",50.748,173482],["2026-05-15",48.446,209892],["2026-05-18",48.53,98970],["2026-05-19",49.13,104866],["2026-05-20",48.396,107879],["2026-05-21",47.271,114604],["2026-05-22",47.046,92964],["2026-05-25",47.046,90007],["2026-05-26",46.0,108088],["2026-05-27",44.81,131069],["2026-05-28",43.61,200405],["2026-05-29",44.7,219932],["2026-06-01",43.88,146531],["2026-06-02",42.6,223738],["2026-06-03",42.17,100954],["2026-06-04",41.15,145761],["2026-06-05",40.21,129750],["2026-06-08",38.92,135791],["2026-06-09",39.01,114504],["2026-06-10",37.59,188428],["2026-06-11",40.42,445666],["2026-06-12",41.6,367160],["2026-06-15",41.31,253863],["2026-06-16",40.82,171741],["2026-06-17",40.87,154969],["2026-06-18",39.93,197105],["2026-06-22",40.62,168742],["2026-06-23",39.55,143145],["2026-06-24",39.47,105107],["2026-06-25",39.22,115569],["2026-06-26",38.02,150547],["2026-06-29",41.82,288601],["2026-06-30",41.51,231475],["2026-07-01",42.5,301323],["2026-07-02",43.36,301797],["2026-07-03",43.75,186255],["2026-07-06",42.04,167696],["2026-07-07",40.56,152581],["2026-07-08",39.86,117600],["2026-07-09",39.0,193943],["2026-07-10",39.98,168624],["2026-07-13",40.47,176390],["2026-07-14",40.73,152802],["2026-07-15",39.49,144808],["2026-07-16",38.93,97683],["2026-07-17",37.74,128531],["2026-07-20",39.45,174631],["2026-07-21",39.63,140375],["2026-07-22",37.97,236527],["2026-07-23",40.06,233925],["2026-07-24",39.25,230129],["2026-07-27",39.06,163123],["2026-07-28",39.2,122435],["2026-07-29",40.97,213860],["2026-07-30",40.69,154297],["2026-07-31",41.15,195056],["2026-08-03",42.36,192148],["2026-08-04",41.07,278515],["2026-08-05",39.79,359896],["2026-08-06",38.88,194501],["2026-08-07",38.7,166914],["2026-08-10",38.57,173135],["2026-08-11",38.83,159796],["2026-08-12",39.02,147295],["2026-08-13",38.64,141390],["2026-08-14",38.0,136713],["2026-08-17",37.86,163207],["2026-08-18",37.65,189318],["2026-08-19",37.4,120321],["2026-08-20",35.86,245890],["2026-08-21",34.11,249470],["2026-08-24",34.15,139028],["2026-08-25",34.8,130326],["2026-08-26",34.37,107424],["2026-08-27",34.24,173766],["2026-08-28",34.34,99194],["2026-08-31",33.83,102911],["2026-09-01",33.85,79834],["2026-09-02",32.99,132556],["2026-09-03",33.09,69904]],"sz002531":[["2025-12-09",6.77,328666],["2025-12-10",6.78,130890],["2025-12-11",6.81,207362],["2025-12-12",6.84,176703],["2025-12-15",6.81,208782],["2025-12-16",6.6,229702],["2025-12-17",6.65,126958],["2025-12-18",6.65,128365],["2025-12-19",6.67,133060],["2025-12-22",6.69,154729],["2025-12-23",6.6,165125],["2025-12-24",6.72,193807],["2025-12-25",6.87,251473],["2025-12-26",6.88,182345],["2025-12-29",6.88,181417],["2025-12-30",6.84,174318],["2025-12-31",6.86,190797],["2026-01-05",6.94,193764],["2026-01-06",7.07,274797],["2026-01-07",6.99,224489],["2026-01-08",7.22,383987],["2026-01-09",7.19,391406],["2026-01-12",7.26,340466],["2026-01-13",7.26,432153],["2026-01-14",7.14,403920],["2026-01-15",7.2,339204],["2026-01-16",7.15,223614],["2026-01-19",7.3,334955],["2026-01-20",7.25,238591],["2026-01-21",7.22,211974],["2026-01-22",7.31,252064],["2026-01-23",7.52,428949],["2026-01-26",7.36,315196],["2026-01-27",7.45,381064],["2026-01-28",7.38,272438],["2026-01-29",7.5,331397],["2026-01-30",7.87,1151625],["2026-02-02",7.98,908816],["2026-02-03",8.59,1152591],["2026-02-04",8.8,634283],["2026-02-05",8.63,597679],["2026-02-06",8.93,777086],["2026-02-09",9.37,905558],["2026-02-10",9.15,505322],["2026-02-11",9.56,855219],["2026-02-12",9.68,467509],["2026-02-13",9.46,386525],["2026-02-24",9.69,480498],["2026-02-25",9.81,429580],["2026-02-26",10.38,658470],["2026-02-27",10.12,509935],["2026-03-02",9.87,469844],["2026-03-03",10.32,953318],["2026-03-04",10.37,502325],["2026-03-05",10.43,489593],["2026-03-06",10.67,542560],["2026-03-09",10.72,499451],["2026-03-10",10.87,601319],["2026-03-11",11.05,564347],["2026-03-12",11.29,827470],["2026-03-13",12.42,1145742],["2026-03-16",12.19,1540642],["2026-03-17",11.79,1407989],["2026-03-18",11.62,1282057],["2026-03-19",11.2,720100],["2026-03-20",11.19,909740],["2026-03-23",10.95,669690],["2026-03-24",11.25,682842],["2026-03-25",11.26,504239],["2026-03-26",10.94,595442],["2026-03-27",10.89,506326],["2026-03-30",11.19,579599],["2026-03-31",11.13,752405],["2026-04-01",11.52,706760],["2026-04-02",11.29,574767],["2026-04-03",10.99,1031938],["2026-04-07",11.06,460256],["2026-04-08",11.07,589935],["2026-04-09",11.31,678664],["2026-04-10",11.39,519836],["2026-04-13",11.66,547514],["2026-04-14",11.94,561562],["2026-04-15",11.86,446452],["2026-04-16",12.16,444334],["2026-04-17",12.61,798652],["2026-04-20",12.25,744264],["2026-04-21",12.22,434495],["2026-04-22",13.05,658263],["2026-04-23",12.68,443195],["2026-04-24",12.29,568804],["2026-04-27",11.88,565638],["2026-04-28",11.37,603954],["2026-04-29",11.84,513202],["2026-04-30",12.02,652814],["2026-05-06",11.66,562322],["2026-05-07",11.69,405669],["2026-05-08",11.68,455302],["2026-05-11",11.31,539397],["2026-05-12",11.56,587067],["2026-05-13",11.48,430149],["2026-05-14",11.67,646076],["2026-05-15",12.44,1359068],["2026-05-18",12.05,838141],["2026-05-19",11.96,507946],["2026-05-20",11.81,356783],["2026-05-21",11.23,498029],["2026-05-22",11.63,486607],["2026-05-25",12.44,699928],["2026-05-26",12.17,664797],["2026-05-27",11.89,539429],["2026-05-28",11.49,493777],["2026-05-29",11.03,603389],["2026-06-01",10.6,466023],["2026-06-02",10.55,507292],["2026-06-03",10.5,401572],["2026-06-04",9.99,551353],["2026-06-05",9.77,496315],["2026-06-08",9.27,433172],["2026-06-09",9.42,407682],["2026-06-10",9.19,412042],["2026-06-11",9.7,510873],["2026-06-12",9.58,474877],["2026-06-15",9.45,446590],["2026-06-16",9.55,423164],["2026-06-17",9.2,380287],["2026-06-18",9.07,321749],["2026-06-22",9.21,305967],["2026-06-23",9.28,560562],["2026-06-24",8.96,429263],["2026-06-25",8.79,321276],["2026-06-26",8.46,356023],["2026-06-29",8.41,378441],["2026-06-30",8.43,327218],["2026-07-01",8.31,380769],["2026-07-02",8.2,372479],["2026-07-03",8.52,437204],["2026-07-06",7.95,596500],["2026-07-07",7.78,290952],["2026-07-08",7.55,428179],["2026-07-09",7.52,368725],["2026-07-10",7.56,385357],["2026-07-13",7.36,520209],["2026-07-14",7.62,549323],["2026-07-15",6.86,814455],["2026-07-16",6.3,1047080],["2026-07-17",6.14,794472],["2026-07-20",6.04,663694],["2026-07-21",6.07,636105],["2026-07-22",6.06,503385],["2026-07-23",6.33,575183],["2026-07-24",6.08,420385],["2026-07-27",6.32,356393],["2026-07-28",6.41,614835],["2026-07-29",6.45,658360],["2026-07-30",6.3,410828],["2026-07-31",6.38,423057],["2026-08-03",6.79,678399],["2026-08-04",6.92,503149],["2026-08-05",6.9,471051],["2026-08-06",6.65,546320],["2026-08-07",6.67,432890],["2026-08-10",6.71,348945],["2026-08-11",6.61,271369],["2026-08-12",6.72,288270],["2026-08-13",6.64,301242],["2026-08-14",6.54,286828],["2026-08-17",6.55,313752],["2026-08-18",6.37,361196],["2026-08-19",6.08,408445],["2026-08-20",6.11,284741],["2026-08-21",6.15,242027],["2026-08-24",6.04,277631],["2026-08-25",6.12,232350],["2026-08-26",6.2,201252],["2026-08-27",6.2,211292],["2026-08-28",6.16,231906],["2026-08-31",6.3,366729],["2026-09-01",6.29,288771],["2026-09-02",6.17,230618],["2026-09-03",6.17,201967]],"sz002487":[["2025-12-09",56.953,163226],["2025-12-10",56.623,114807],["2025-12-11",57.523,172055],["2025-12-12",57.403,141372],["2025-12-15",57.233,145764],["2025-12-16",53.953,209270],["2025-12-17",55.513,125311],["2025-12-18",54.553,92878],["2025-12-19",54.283,133160],["2025-12-22",54.733,129949],["2025-12-23",54.523,80116],["2025-12-24",54.033,110370],["2025-12-25",52.053,164545],["2025-12-26",52.493,135897],["2025-12-29",52.623,147621],["2025-12-30",53.063,135686],["2025-12-31",51.843,99703],["2026-01-05",53.263,162099],["2026-01-06",53.613,171698],["2026-01-07",52.823,203189],["2026-01-08",52.743,252924],["2026-01-09",53.313,169590],["2026-01-12",51.003,247516],["2026-01-13",49.293,240930],["2026-01-14",50.223,189661],["2026-01-15",54.023,269443],["2026-01-16",54.733,200332],["2026-01-19",56.273,195628],["2026-01-20",57.173,208529],["2026-01-21",60.253,230651],["2026-01-22",60.673,221060],["2026-01-23",60.893,152508],["2026-01-26",61.413,166624],["2026-01-27",62.863,177809],["2026-01-28",66.133,195597],["2026-01-29",62.903,182602],["2026-01-30",61.343,139303],["2026-02-02",59.293,127272],["2026-02-03",63.313,160267],["2026-02-04",63.333,115949],["2026-02-05",62.443,112587],["2026-02-06",61.113,75044],["2026-02-09",62.703,92045],["2026-02-10",62.413,52248],["2026-02-11",62.433,63606],["2026-02-12",62.253,64948],["2026-02-13",61.833,62046],["2026-02-24",65.243,131943],["2026-02-25",66.273,112368],["2026-02-26",70.463,183030],["2026-02-27",69.523,191822],["2026-03-02",69.033,171925],["2026-03-03",69.203,167384],["2026-03-04",71.953,181604],["2026-03-05",70.303,175776],["2026-03-06",65.103,221789],["2026-03-09",65.243,220258],["2026-03-10",65.503,150041],["2026-03-11",66.563,155942],["2026-03-12",73.233,234329],["2026-03-13",80.563,507261],["2026-03-16",75.413,464887],["2026-03-17",71.633,375251],["2026-03-18",70.943,294254],["2026-03-19",70.253,230927],["2026-03-20",72.653,356326],["2026-03-23",73.173,326250],["2026-03-24",73.293,268709],["2026-03-25",73.153,225812],["2026-03-26",75.413,312359],["2026-03-27",74.073,205142],["2026-03-30",73.413,156461],["2026-03-31",69.613,235239],["2026-04-01",70.323,182990],["2026-04-02",72.183,221331],["2026-04-03",72.563,159749],["2026-04-07",73.543,141692],["2026-04-08",71.523,266206],["2026-04-09",72.603,170676],["2026-04-10",76.113,214519],["2026-04-13",80.423,199529],["2026-04-14",79.513,135701],["2026-04-15",77.5,206275],["2026-04-16",77.7,180375],["2026-04-17",85.47,131177],["2026-04-20",89.63,352941],["2026-04-21",86.99,160429],["2026-04-22",87.64,162951],["2026-04-23",85.25,161582],["2026-04-24",88.66,226203],["2026-04-27",88.66,182015],["2026-04-28",86.75,276750],["2026-04-29",85.47,205967],["2026-04-30",84.0,164893],["2026-05-06",86.15,200588],["2026-05-07",84.86,130815],["2026-05-08",82.98,154769],["2026-05-11",85.0,168730],["2026-05-12",83.21,152258],["2026-05-13",83.01,149223],["2026-05-14",80.76,142731],["2026-05-15",77.4,226444],["2026-05-18",78.93,126750],["2026-05-19",77.14,138230],["2026-05-20",77.03,151889],["2026-05-21",75.8,142299],["2026-05-22",74.92,146207],["2026-05-25",78.41,177326],["2026-05-26",77.6,173417],["2026-05-27",74.71,157283],["2026-05-28",73.55,146931],["2026-05-29",72.99,185727],["2026-06-01",72.9,193156],["2026-06-02",71.45,114401],["2026-06-03",69.91,169629],["2026-06-04",67.58,242086],["2026-06-05",63.67,270714],["2026-06-08",59.15,306606],["2026-06-09",61.37,287939],["2026-06-10",59.64,168824],["2026-06-11",58.48,171450],["2026-06-12",59.55,230656],["2026-06-15",59.32,248757],["2026-06-16",60.2,271008],["2026-06-17",60.57,164002],["2026-06-18",58.32,227718],["2026-06-22",60.95,291476],["2026-06-23",59.79,236702],["2026-06-24",58.2,200511],["2026-06-25",56.6,202536],["2026-06-26",55.55,185145],["2026-06-29",57.17,204089],["2026-06-30",57.97,185948],["2026-07-01",55.04,271920],["2026-07-02",54.67,181035],["2026-07-03",56.05,147754],["2026-07-06",52.14,203807],["2026-07-07",49.7,219190],["2026-07-08",46.7,255993],["2026-07-09",47.0,296221],["2026-07-10",46.21,174475],["2026-07-13",42.45,253685],["2026-07-14",43.7,229765],["2026-07-15",42.99,162903],["2026-07-16",40.95,167791],["2026-07-17",37.37,386745],["2026-07-20",36.61,278871],["2026-07-21",38.36,250404],["2026-07-22",37.12,198786],["2026-07-23",39.55,307191],["2026-07-24",38.19,441034],["2026-07-27",40.54,341804],["2026-07-28",40.06,410747],["2026-07-29",40.4,351721],["2026-07-30",39.8,283267],["2026-07-31",39.41,263879],["2026-08-03",40.8,325363],["2026-08-04",41.57,264661],["2026-08-05",42.56,290043],["2026-08-06",41.76,247740],["2026-08-07",42.12,222529],["2026-08-10",42.1,235504],["2026-08-11",41.65,167737],["2026-08-12",43.63,284359],["2026-08-13",42.55,217501],["2026-08-14",41.85,151852],["2026-08-17",41.92,169499],["2026-08-18",41.34,178412],["2026-08-19",38.82,217773],["2026-08-20",39.19,158841],["2026-08-21",39.18,129678],["2026-08-24",35.26,366559],["2026-08-25",35.16,321536],["2026-08-26",35.26,179890],["2026-08-27",35.41,163909],["2026-08-28",35.76,162347],["2026-08-31",35.25,228955],["2026-09-01",34.2,189535],["2026-09-02",33.25,192319],["2026-09-03",33.35,151136]],"sh688349":[["2025-12-09",19.428,1758131],["2025-12-10",19.497,3502346],["2025-12-11",19.559,2688693],["2025-12-12",20.036,4101826],["2025-12-15",20.005,3290050],["2025-12-16",19.913,2364862],["2025-12-17",19.944,2847390],["2025-12-18",19.89,2068295],["2025-12-19",20.036,1830140],["2025-12-22",19.744,3571636],["2025-12-23",19.474,2908729],["2025-12-24",19.682,2022410],["2025-12-25",19.99,2854173],["2025-12-26",19.528,3659962],["2025-12-29",19.051,4160349],["2025-12-30",19.051,2087124],["2025-12-31",19.174,2685686],["2026-01-05",19.536,4474964],["2026-01-06",20.606,7832691],["2026-01-07",20.298,3178034],["2026-01-08",20.498,4095954],["2026-01-09",20.952,5412728],["2026-01-12",21.175,4161487],["2026-01-13",20.767,4199044],["2026-01-14",20.413,4495586],["2026-01-15",20.436,5130417],["2026-01-16",20.229,5080603],["2026-01-19",20.729,5464283],["2026-01-20",20.821,4589056],["2026-01-21",20.698,3978640],["2026-01-22",20.552,3042050],["2026-01-23",21.553,5971204],["2026-01-26",20.883,5034085],["2026-01-27",21.114,5249293],["2026-01-28",21.36,4732447],["2026-01-29",20.698,3900160],["2026-01-30",19.736,5486306],["2026-02-02",19.613,4473492],["2026-02-03",20.19,4132313],["2026-02-04",21.275,6405499],["2026-02-05",21.014,3465686],["2026-02-06",21.06,3871207],["2026-02-09",20.775,3981757],["2026-02-10",20.498,3293215],["2026-02-11",20.306,2367901],["2026-02-12",20.013,2690607],["2026-02-13",19.467,3435719],["2026-02-24",19.851,4882195],["2026-02-25",20.159,5428061],["2026-02-26",20.329,4099116],["2026-02-27",20.206,3542572],["2026-03-02",20.036,5305834],["2026-03-03",19.844,5247737],["2026-03-04",19.567,5394275],["2026-03-05",19.405,4184903],["2026-03-06",19.636,3906119],["2026-03-09",19.567,5650308],["2026-03-10",19.821,5017151],["2026-03-11",20.413,7207191],["2026-03-12",22.769,23271857],["2026-03-13",22.076,19690229],["2026-03-16",21.476,14456736],["2026-03-17",20.814,11284994],["2026-03-18",20.298,12179879],["2026-03-19",20.244,11325123],["2026-03-20",19.698,15022342],["2026-03-23",18.474,14955645],["2026-03-24",18.843,9467752],["2026-03-25",18.882,8104860],["2026-03-26",17.92,8493824],["2026-03-27",18.481,8237309],["2026-03-30",18.466,7622371],["2026-03-31",17.896,5969749],["2026-04-01",18.081,4701471],["2026-04-02",17.465,5968729],["2026-04-03",17.127,4539507],["2026-04-07",16.98,3406987],["2026-04-08",17.966,6579015],["2026-04-09",17.866,5520961],["2026-04-10",17.989,5670392],["2026-04-13",18.266,5056912],["2026-04-14",18.258,4133714],["2026-04-15",17.973,4141597],["2026-04-16",17.935,4861171],["2026-04-17",18.389,6578361],["2026-04-20",18.612,6536127],["2026-04-21",18.782,6163160],["2026-04-22",19.013,5715026],["2026-04-23",18.759,12060446],["2026-04-24",18.32,7750024],["2026-04-27",18.404,7116363],["2026-04-28",18.404,8182829],["2026-04-29",18.635,5565192],["2026-04-30",18.805,8214989],["2026-05-06",19.028,9553551],["2026-05-07",19.089,6212096],["2026-05-08",18.874,5619249],["2026-05-11",18.889,9729465],["2026-05-12",17.896,11692012],["2026-05-13",18.143,11237705],["2026-05-14",17.211,10649772],["2026-05-15",16.796,9083839],["2026-05-18",16.757,6659653],["2026-05-19",16.811,5466516],["2026-05-20",16.65,6693138],["2026-05-21",16.65,8071936],["2026-05-22",16.719,6367825],["2026-05-25",16.403,8463516],["2026-05-26",16.496,6826214],["2026-05-27",16.134,7814870],["2026-05-28",16.111,5750467],["2026-05-29",15.834,7819036],["2026-06-01",15.318,9261197],["2026-06-02",14.733,9544045],["2026-06-03",14.61,6814995],["2026-06-04",14.094,9998084],["2026-06-05",13.994,7030048],["2026-06-08",13.217,9283414],["2026-06-09",13.471,8784663],["2026-06-10",13.386,7264504],["2026-06-11",13.578,8805057],["2026-06-12",14.602,16489663],["2026-06-15",14.448,10630634],["2026-06-16",14.263,7269502],["2026-06-17",13.94,9235785],["2026-06-18",14.12,11400534],["2026-06-22",13.81,10823658],["2026-06-23",13.61,8689542],["2026-06-24",13.17,12330388],["2026-06-25",13.31,12427407],["2026-06-26",14.45,29695905],["2026-06-29",14.93,25813280],["2026-06-30",15.18,19601294],["2026-07-01",15.35,20556494],["2026-07-02",14.77,16009558],["2026-07-03",15.1,12779257],["2026-07-06",14.56,10977482],["2026-07-07",14.23,9304504],["2026-07-08",13.92,9289172],["2026-07-09",14.04,9542192],["2026-07-10",14.33,12254549],["2026-07-13",13.77,9306166],["2026-07-14",13.79,6781786],["2026-07-15",14.12,8015539],["2026-07-16",13.92,7030114],["2026-07-17",13.72,10272734],["2026-07-20",14.53,15116185],["2026-07-21",14.5,14091864],["2026-07-22",14.26,9790309],["2026-07-23",14.63,9021567],["2026-07-24",14.15,8124027],["2026-07-27",14.57,7564270],["2026-07-28",14.49,8255608],["2026-07-29",14.92,11157584],["2026-07-30",15.11,8873056],["2026-07-31",15.2,9669689],["2026-08-03",15.6,11654187],["2026-08-04",15.26,10405953],["2026-08-05",15.16,8217452],["2026-08-06",15.06,8890344],["2026-08-07",14.96,6543087],["2026-08-10",15.11,7226836],["2026-08-11",14.76,7435095],["2026-08-12",14.83,5332571],["2026-08-13",14.64,6207240],["2026-08-14",14.45,6378389],["2026-08-17",14.51,5751803],["2026-08-18",14.4,5101939],["2026-08-19",14.08,6824523],["2026-08-20",14.13,4922104],["2026-08-21",14.0,4876819],["2026-08-24",13.84,4612913],["2026-08-25",13.72,7049107],["2026-08-26",14.05,6438997],["2026-08-27",13.97,6655966],["2026-08-28",13.78,7560811],["2026-08-31",13.36,10438416],["2026-09-01",13.29,10244454],["2026-09-02",13.23,6606328],["2026-09-03",12.91,10206290]],"sz300750":[["2025-12-09",379.282,186918],["2025-12-10",374.072,194334],["2025-12-11",380.682,282154],["2025-12-12",383.492,240020],["2025-12-15",377.192,182750],["2025-12-16",370.102,191217],["2025-12-17",375.112,222574],["2025-12-18",363.692,296393],["2025-12-19",365.692,175599],["2025-12-22",363.532,254935],["2025-12-23",369.792,236041],["2025-12-24",367.292,210884],["2025-12-25",364.702,203431],["2025-12-26",366.122,257237],["2025-12-29",361.002,241241],["2025-12-30",360.892,190308],["2025-12-31",358.952,160266],["2026-01-05",369.192,336881],["2026-01-06",365.682,341477],["2026-01-07",362.702,262285],["2026-01-08",360.902,269590],["2026-01-09",360.922,314772],["2026-01-12",353.372,488307],["2026-01-13",350.692,296709],["2026-01-14",345.672,380834],["2026-01-15",345.442,323709],["2026-01-16",344.012,319818],["2026-01-19",340.592,338643],["2026-01-20",341.292,354406],["2026-01-21",341.502,393936],["2026-01-22",337.492,459948],["2026-01-23",338.692,339761],["2026-01-26",333.742,332914],["2026-01-27",331.092,322949],["2026-01-28",331.682,463082],["2026-01-29",333.582,338444],["2026-01-30",341.692,486501],["2026-02-02",340.672,391917],["2026-02-03",339.602,265163],["2026-02-04",356.722,485317],["2026-02-05",354.632,284272],["2026-02-06",360.802,393726],["2026-02-09",360.512,274486],["2026-02-10",356.662,185635],["2026-02-11",359.692,196535],["2026-02-12",367.562,277546],["2026-02-13",357.032,223145],["2026-02-24",353.642,226951],["2026-02-25",353.872,187166],["2026-02-26",337.692,435414],["2026-02-27",333.702,254466],["2026-03-02",331.912,283513],["2026-03-03",335.762,400075],["2026-03-04",330.592,250804],["2026-03-05",341.942,310061],["2026-03-06",346.462,209631],["2026-03-09",349.192,317976],["2026-03-10",367.992,507417],["2026-03-11",388.492,575987],["2026-03-12",387.192,291504],["2026-03-13",388.692,355826],["2026-03-16",400.092,373521],["2026-03-17",396.692,359807],["2026-03-18",393.712,265300],["2026-03-19",392.192,292866],["2026-03-20",404.692,537297],["2026-03-23",393.682,446141],["2026-03-24",388.682,364105],["2026-03-25",389.502,267528],["2026-03-26",394.192,267637],["2026-03-27",407.872,302580],["2026-03-30",404.692,253484],["2026-03-31",393.392,249256],["2026-04-01",397.402,231701],["2026-04-02",392.862,223056],["2026-04-03",378.152,247515],["2026-04-07",376.282,172576],["2026-04-08",382.992,364184],["2026-04-09",381.682,259552],["2026-04-10",407.692,507887],["2026-04-13",418.822,412399],["2026-04-14",422.482,442208],["2026-04-15",422.692,373536],["2026-04-16",445.672,635062],["2026-04-17",435.892,365358],["2026-04-20",424.192,529278],["2026-04-21",439.292,577746],["2026-04-22",434.948,460254],["2026-04-23",437.498,354310],["2026-04-24",443.498,395425],["2026-04-27",433.478,330613],["2026-04-28",426.268,350121],["2026-04-29",443.598,376336],["2026-04-30",434.598,298121],["2026-05-06",458.598,473727],["2026-05-07",450.238,386213],["2026-05-08",435.598,366049],["2026-05-11",444.708,341901],["2026-05-12",429.848,341515],["2026-05-13",432.648,316858],["2026-05-14",425.598,347046],["2026-05-15",422.198,297049],["2026-05-18",415.828,284983],["2026-05-19",416.518,260877],["2026-05-20",413.348,281190],["2026-05-21",410.228,338672],["2026-05-22",409.758,277884],["2026-05-25",401.478,381977],["2026-05-26",401.098,350627],["2026-05-27",413.398,533729],["2026-05-28",414.278,327771],["2026-05-29",422.598,498119],["2026-06-01",418.698,386005],["2026-06-02",432.488,387982],["2026-06-03",425.018,385526],["2026-06-04",406.798,431155],["2026-06-05",401.598,287389],["2026-06-08",391.618,286526],["2026-06-09",398.098,277351],["2026-06-10",387.098,244357],["2026-06-11",380.798,268654],["2026-06-12",393.448,414208],["2026-06-15",396.698,340749],["2026-06-16",402.128,348393],["2026-06-17",397.598,250093],["2026-06-18",390.148,385481],["2026-06-22",407.578,594648],["2026-06-23",391.108,373741],["2026-06-24",393.958,344271],["2026-06-25",400.498,324046],["2026-06-26",379.598,465253],["2026-06-29",390.958,425259],["2026-06-30",391.608,270383],["2026-07-01",382.438,440886],["2026-07-02",380.948,340754],["2026-07-03",378.598,258849],["2026-07-06",373.108,216480],["2026-07-07",371.088,208486],["2026-07-08",359.598,270519],["2026-07-09",374.098,377942],["2026-07-10",347.358,556014],["2026-07-13",357.658,462907],["2026-07-14",362.608,436316],["2026-07-15",371.598,358493],["2026-07-16",364.798,251869],["2026-07-17",358.598,512453],["2026-07-20",375.028,447908],["2026-07-21",380.798,440360],["2026-07-22",370.858,311938],["2026-07-23",384.588,359409],["2026-07-24",381.608,254542],["2026-07-27",398.598,473272],["2026-07-28",389.458,371911],["2026-07-29",395.438,404359],["2026-07-30",400.478,452390],["2026-07-31",393.898,394149],["2026-08-03",392.998,215223],["2026-08-04",393.698,261654],["2026-08-05",403.798,300112],["2026-08-06",386.598,453201],["2026-08-07",386.668,255193],["2026-08-10",393.87,231609],["2026-08-11",390.4,162992],["2026-08-12",393.93,202364],["2026-08-13",396.3,244293],["2026-08-14",393.93,159302],["2026-08-17",399.98,203998],["2026-08-18",396.26,169332],["2026-08-19",389.0,211572],["2026-08-20",385.0,179096],["2026-08-21",391.15,204496],["2026-08-24",387.89,139730],["2026-08-25",376.73,260646],["2026-08-26",379.0,207162],["2026-08-27",373.0,233738],["2026-08-28",368.5,263770],["2026-08-31",363.55,262424],["2026-09-01",358.1,198087],["2026-09-02",348.29,278067],["2026-09-03",349.5,262864]],"sz002594":[["2025-12-09",95.672,163227],["2025-12-10",96.112,198402],["2025-12-11",95.872,250908],["2025-12-12",96.642,554621],["2025-12-15",95.172,293301],["2025-12-16",93.892,258768],["2025-12-17",94.852,272825],["2025-12-18",93.172,252797],["2025-12-19",93.872,272068],["2025-12-22",94.012,206235],["2025-12-23",94.452,236617],["2025-12-24",94.062,192810],["2025-12-25",94.482,182202],["2025-12-26",99.652,1020959],["2025-12-29",99.852,519167],["2025-12-30",99.392,318756],["2025-12-31",97.362,402859],["2026-01-05",97.752,382625],["2026-01-06",99.632,521785],["2026-01-07",97.242,560849],["2026-01-08",96.522,300655],["2026-01-09",96.652,350341],["2026-01-12",97.112,425257],["2026-01-13",96.832,498723],["2026-01-14",95.742,514750],["2026-01-15",95.312,295635],["2026-01-16",95.502,384588],["2026-01-19",95.832,334927],["2026-01-20",94.382,389149],["2026-01-21",93.742,308334],["2026-01-22",93.762,291014],["2026-01-23",93.292,383303],["2026-01-26",92.272,375460],["2026-01-27",91.452,362981],["2026-01-28",92.982,715566],["2026-01-29",91.952,371825],["2026-01-30",90.532,329176],["2026-02-02",86.692,646974],["2026-02-03",87.012,377827],["2026-02-04",88.782,376505],["2026-02-05",89.752,354240],["2026-02-06",89.462,247088],["2026-02-09",89.702,208180],["2026-02-10",90.452,267605],["2026-02-11",91.922,396950],["2026-02-12",90.802,230313],["2026-02-13",89.912,217339],["2026-02-24",90.512,206445],["2026-02-25",91.092,324780],["2026-02-26",89.492,291019],["2026-02-27",88.962,219341],["2026-03-02",96.432,1435137],["2026-03-03",94.852,865741],["2026-03-04",95.632,700969],["2026-03-05",94.112,552440],["2026-03-06",93.262,503540],["2026-03-09",97.162,1093409],["2026-03-10",96.242,507462],["2026-03-11",98.862,903744],["2026-03-12",98.742,502524],["2026-03-13",99.312,519765],["2026-03-16",104.262,1087814],["2026-03-17",102.512,841389],["2026-03-18",101.332,617996],["2026-03-19",101.952,531059],["2026-03-20",102.672,628783],["2026-03-23",107.272,1782446],["2026-03-24",106.282,921446],["2026-03-25",106.242,662665],["2026-03-26",102.782,828121],["2026-03-27",104.942,658455],["2026-03-30",105.692,727557],["2026-03-31",104.892,588659],["2026-04-01",102.292,715198],["2026-04-02",101.292,604349],["2026-04-03",98.652,491745],["2026-04-07",97.622,379697],["2026-04-08",100.862,562818],["2026-04-09",98.672,379063],["2026-04-10",101.312,605731],["2026-04-13",103.892,663136],["2026-04-14",103.462,543343],["2026-04-15",102.672,428719],["2026-04-16",105.182,643661],["2026-04-17",103.422,442048],["2026-04-20",102.552,383677],["2026-04-21",101.172,432258],["2026-04-22",101.262,343733],["2026-04-23",99.622,492164],["2026-04-24",99.102,337739],["2026-04-27",101.982,601670],["2026-04-28",101.122,361550],["2026-04-29",105.042,1056558],["2026-04-30",102.622,600979],["2026-05-06",100.392,670487],["2026-05-07",100.102,468846],["2026-05-08",99.662,382158],["2026-05-11",100.082,482810],["2026-05-12",98.872,353441],["2026-05-13",98.242,456194],["2026-05-14",98.372,339180],["2026-05-15",95.942,466217],["2026-05-18",94.152,354613],["2026-05-19",95.642,296184],["2026-05-20",93.002,415010],["2026-05-21",93.152,373950],["2026-05-22",93.392,268592],["2026-05-25",95.602,405995],["2026-05-26",96.192,386524],["2026-05-27",94.862,362374],["2026-05-28",95.522,314590],["2026-05-29",95.822,606294],["2026-06-01",93.292,445981],["2026-06-02",96.402,554964],["2026-06-03",94.462,370434],["2026-06-04",93.082,318712],["2026-06-05",92.652,339969],["2026-06-08",90.832,316844],["2026-06-09",91.532,281927],["2026-06-10",89.952,241287],["2026-06-11",89.442,315087],["2026-06-12",91.242,385352],["2026-06-15",90.462,312979],["2026-06-16",89.282,336019],["2026-06-17",87.112,495267],["2026-06-18",87.772,435790],["2026-06-22",87.232,637242],["2026-06-23",84.642,466217],["2026-06-24",82.942,455735],["2026-06-25",81.842,556432],["2026-06-26",77.842,663208],["2026-06-29",79.282,523707],["2026-06-30",79.342,382043],["2026-07-01",80.302,503177],["2026-07-02",83.212,825046],["2026-07-03",88.112,838982],["2026-07-06",87.182,485828],["2026-07-07",85.902,389470],["2026-07-08",87.442,403809],["2026-07-09",86.512,377393],["2026-07-10",89.642,709332],["2026-07-13",86.622,424585],["2026-07-14",89.822,547075],["2026-07-15",91.402,514154],["2026-07-16",93.782,607204],["2026-07-17",93.112,687346],["2026-07-20",93.562,439890],["2026-07-21",93.942,671593],["2026-07-22",91.212,603550],["2026-07-23",92.292,338014],["2026-07-24",91.532,243034],["2026-07-27",92.042,265332],["2026-07-28",92.992,364015],["2026-07-29",94.492,514457],["2026-07-30",95.842,480361],["2026-07-31",95.77,436131],["2026-08-03",94.45,363897],["2026-08-04",91.15,667715],["2026-08-05",90.82,515598],["2026-08-06",89.45,367372],["2026-08-07",90.04,407016],["2026-08-10",91.15,385737],["2026-08-11",90.12,242228],["2026-08-12",90.41,208188],["2026-08-13",89.71,226654],["2026-08-14",88.9,205856],["2026-08-17",89.88,246255],["2026-08-18",89.53,206369],["2026-08-19",88.66,219606],["2026-08-20",90.48,358074],["2026-08-21",90.47,178862],["2026-08-24",90.66,273647],["2026-08-25",91.36,274502],["2026-08-26",92.09,282823],["2026-08-27",91.49,177014],["2026-08-28",92.32,250318],["2026-08-31",88.2,640400],["2026-09-01",88.71,288589],["2026-09-02",86.8,346800],["2026-09-03",87.31,203734]],"sz002460":[["2025-12-09",62.35,468475],["2025-12-10",63.18,586004],["2025-12-11",62.84,557736],["2025-12-12",61.15,672202],["2025-12-15",60.05,434653],["2025-12-16",59.85,431907],["2025-12-17",62.84,755242],["2025-12-18",62.34,603467],["2025-12-19",64.03,746635],["2025-12-22",65.12,729737],["2025-12-23",66.21,694992],["2025-12-24",66.64,614449],["2025-12-25",65.98,583275],["2025-12-26",68.42,786200],["2025-12-29",65.17,684785],["2025-12-30",64.0,870274],["2025-12-31",62.74,515255],["2026-01-05",64.2,602612],["2026-01-06",66.75,749074],["2026-01-07",66.33,636901],["2026-01-08",64.87,650241],["2026-01-09",65.24,521277],["2026-01-12",67.82,700475],["2026-01-13",70.65,1185922],["2026-01-14",68.91,853943],["2026-01-15",71.85,860841],["2026-01-16",69.05,797858],["2026-01-19",67.72,509943],["2026-01-20",67.83,562884],["2026-01-21",70.21,674165],["2026-01-22",69.7,521074],["2026-01-23",73.72,894576],["2026-01-26",73.49,832058],["2026-01-27",72.76,654351],["2026-01-28",74.21,841401],["2026-01-29",73.62,719411],["2026-01-30",68.45,875287],["2026-02-02",65.78,503869],["2026-02-03",67.75,431267],["2026-02-04",67.0,323444],["2026-02-05",62.76,493994],["2026-02-06",64.6,480126],["2026-02-09",65.02,301303],["2026-02-10",64.88,199627],["2026-02-11",66.5,344147],["2026-02-12",66.67,264622],["2026-02-13",66.17,240313],["2026-02-24",69.84,531988],["2026-02-25",71.18,541556],["2026-02-26",72.71,728207],["2026-02-27",72.95,490051],["2026-03-02",71.79,519819],["2026-03-03",67.12,613056],["2026-03-04",66.74,396340],["2026-03-05",66.97,318478],["2026-03-06",65.74,344892],["2026-03-09",67.61,485547],["2026-03-10",68.87,321960],["2026-03-11",70.02,438644],["2026-03-12",69.35,302079],["2026-03-13",69.88,537037],["2026-03-16",70.45,402250],["2026-03-17",68.34,308917],["2026-03-18",66.5,379439],["2026-03-19",63.29,442127],["2026-03-20",67.28,879258],["2026-03-23",67.43,717229],["2026-03-24",69.06,602362],["2026-03-25",70.48,633043],["2026-03-26",72.28,766407],["2026-03-27",79.52,1312133],["2026-03-30",80.0,1175709],["2026-03-31",78.23,809256],["2026-04-01",77.16,689439],["2026-04-02",79.78,908779],["2026-04-03",79.6,620371],["2026-04-07",78.81,486450],["2026-04-08",81.86,811550],["2026-04-09",80.86,651947],["2026-04-10",83.83,1045334],["2026-04-13",84.23,1010330],["2026-04-14",88.13,915730],["2026-04-15",82.02,1148561],["2026-04-16",85.45,853823],["2026-04-17",83.91,920809],["2026-04-20",82.56,646663],["2026-04-21",83.21,786631],["2026-04-22",82.07,625380],["2026-04-23",79.73,633779],["2026-04-24",84.84,970755],["2026-04-27",83.96,675071],["2026-04-28",81.95,482094],["2026-04-29",86.75,848991],["2026-04-30",88.53,1075419],["2026-05-06",91.3,903407],["2026-05-07",87.85,888511],["2026-05-08",84.62,803053],["2026-05-11",85.03,618656],["2026-05-12",83.5,525290],["2026-05-13",82.84,586696],["2026-05-14",79.83,653995],["2026-05-15",77.91,557790],["2026-05-18",79.23,495011],["2026-05-19",75.92,622791],["2026-05-20",77.02,669172],["2026-05-21",75.18,580290],["2026-05-22",75.75,358370],["2026-05-25",74.95,404952],["2026-05-26",74.85,456863],["2026-05-27",73.15,491851],["2026-05-28",72.65,520056],["2026-05-29",71.33,447034],["2026-06-01",69.71,424394],["2026-06-02",68.83,495656],["2026-06-03",68.64,377236],["2026-06-04",66.64,420439],["2026-06-05",65.5,561627],["2026-06-08",62.61,505435],["2026-06-09",67.79,718881],["2026-06-10",67.45,738385],["2026-06-11",69.79,877108],["2026-06-12",71.01,822480],["2026-06-15",71.17,791511],["2026-06-16",71.3,635312],["2026-06-17",71.17,585440],["2026-06-18",69.21,626659],["2026-06-22",71.9,817831],["2026-06-23",67.85,603030],["2026-06-24",71.47,745469],["2026-06-25",68.21,662428],["2026-06-26",63.23,629032],["2026-06-29",63.92,522232],["2026-06-30",65.25,508657],["2026-07-01",65.77,610760],["2026-07-02",63.84,399261],["2026-07-03",62.82,404447],["2026-07-06",62.68,570545],["2026-07-07",61.29,457968],["2026-07-08",56.02,694985],["2026-07-09",55.84,717103],["2026-07-10",53.48,563887],["2026-07-13",50.98,506173],["2026-07-14",52.4,410356],["2026-07-15",51.5,395263],["2026-07-16",49.97,672465],["2026-07-17",48.48,502832],["2026-07-20",46.11,615237],["2026-07-21",47.69,507371],["2026-07-22",47.43,428061],["2026-07-23",51.19,851533],["2026-07-24",49.03,512511],["2026-07-27",50.08,419955],["2026-07-28",49.04,364266],["2026-07-29",49.92,531431],["2026-07-30",49.93,453900],["2026-07-31",49.71,437785],["2026-08-03",50.4,412492],["2026-08-04",51.7,380785],["2026-08-05",52.98,431929],["2026-08-06",52.24,407788],["2026-08-07",52.82,406333],["2026-08-10",54.13,545744],["2026-08-11",53.42,335334],["2026-08-12",53.9,375117],["2026-08-13",53.16,352143],["2026-08-14",53.85,344946],["2026-08-17",54.28,333014],["2026-08-18",53.59,318242],["2026-08-19",51.72,309406],["2026-08-20",51.27,233537],["2026-08-21",54.12,614171],["2026-08-24",55.63,647635],["2026-08-25",53.05,459700],["2026-08-26",53.5,329992],["2026-08-27",54.13,279577],["2026-08-28",55.0,479966],["2026-08-31",53.89,394081],["2026-09-01",52.53,365769],["2026-09-02",50.23,421894],["2026-09-03",50.52,263879]],"sz002466":[["2025-12-09",52.25,407933],["2025-12-10",52.89,446508],["2025-12-11",53.1,518393],["2025-12-12",51.64,585150],["2025-12-15",50.41,591182],["2025-12-16",50.13,417546],["2025-12-17",53.14,828461],["2025-12-18",52.1,565806],["2025-12-19",52.9,679511],["2025-12-22",53.92,694686],["2025-12-23",55.78,782465],["2025-12-24",56.26,733359],["2025-12-25",55.53,730350],["2025-12-26",57.93,944968],["2025-12-29",55.3,745494],["2025-12-30",56.38,568600],["2025-12-31",55.38,453809],["2026-01-05",57.0,623355],["2026-01-06",59.28,858113],["2026-01-07",59.24,725155],["2026-01-08",58.62,696265],["2026-01-09",58.63,553955],["2026-01-12",61.3,698925],["2026-01-13",62.36,1045082],["2026-01-14",59.82,916042],["2026-01-15",61.32,687723],["2026-01-16",58.73,695011],["2026-01-19",58.61,362286],["2026-01-20",59.49,484997],["2026-01-21",61.43,635180],["2026-01-22",60.65,487454],["2026-01-23",62.8,712468],["2026-01-26",61.71,706591],["2026-01-27",61.0,544427],["2026-01-28",61.11,603252],["2026-01-29",59.12,587315],["2026-01-30",54.55,813391],["2026-02-02",52.29,520931],["2026-02-03",53.47,402648],["2026-02-04",52.75,333374],["2026-02-05",49.44,576454],["2026-02-06",50.2,431093],["2026-02-09",50.35,268706],["2026-02-10",50.19,195724],["2026-02-11",51.15,366572],["2026-02-12",51.29,285365],["2026-02-13",51.24,244611],["2026-02-24",53.31,424658],["2026-02-25",54.32,588012],["2026-02-26",56.04,731372],["2026-02-27",56.6,439069],["2026-03-02",55.18,470178],["2026-03-03",51.58,553959],["2026-03-04",52.07,332515],["2026-03-05",52.35,245037],["2026-03-06",51.99,254909],["2026-03-09",53.09,390205],["2026-03-10",53.85,245496],["2026-03-11",54.54,342432],["2026-03-12",53.6,224247],["2026-03-13",54.15,454958],["2026-03-16",53.58,280537],["2026-03-17",52.11,241904],["2026-03-18",51.15,275511],["2026-03-19",48.93,324050],["2026-03-20",50.1,500683],["2026-03-23",49.0,436927],["2026-03-24",51.63,557952],["2026-03-25",53.46,538317],["2026-03-26",54.2,617795],["2026-03-27",57.96,1021455],["2026-03-30",57.24,722212],["2026-03-31",55.48,512703],["2026-04-01",55.45,392255],["2026-04-02",56.17,525641],["2026-04-03",55.44,324268],["2026-04-07",56.7,379872],["2026-04-08",58.27,590988],["2026-04-09",57.65,499803],["2026-04-10",59.64,762971],["2026-04-13",62.1,768397],["2026-04-14",64.53,760424],["2026-04-15",61.8,732551],["2026-04-16",65.32,917480],["2026-04-17",66.65,852878],["2026-04-20",66.82,578897],["2026-04-21",70.71,1367064],["2026-04-22",70.73,853743],["2026-04-23",67.97,851190],["2026-04-24",73.7,1351006],["2026-04-27",73.65,1006084],["2026-04-28",72.53,768752],["2026-04-29",75.52,1168530],["2026-04-30",80.03,1306785],["2026-05-06",81.71,1208117],["2026-05-07",79.06,1216578],["2026-05-08",76.05,1020733],["2026-05-11",77.37,804775],["2026-05-12",74.75,868375],["2026-05-13",74.38,766615],["2026-05-14",70.69,847469],["2026-05-15",69.11,700172],["2026-05-18",69.38,570799],["2026-05-19",66.58,691412],["2026-05-20",68.16,761690],["2026-05-21",65.78,644388],["2026-05-22",66.52,512094],["2026-05-25",66.67,533716],["2026-05-26",66.4,498142],["2026-05-27",64.48,595372],["2026-05-28",64.39,537589],["2026-05-29",62.88,488075],["2026-06-01",62.17,449104],["2026-06-02",61.29,548125],["2026-06-03",60.98,432099],["2026-06-04",59.46,430926],["2026-06-05",59.06,574124],["2026-06-08",56.2,573546],["2026-06-09",60.01,739523],["2026-06-10",59.48,708033],["2026-06-11",61.0,926710],["2026-06-12",62.5,990334],["2026-06-15",63.72,930168],["2026-06-16",63.99,795034],["2026-06-17",64.04,707654],["2026-06-18",62.18,746908],["2026-06-22",64.97,934530],["2026-06-23",61.32,693784],["2026-06-24",66.13,969650],["2026-06-25",64.64,847014],["2026-06-26",58.92,880824],["2026-06-29",59.87,601196],["2026-06-30",61.32,580665],["2026-07-01",62.29,694243],["2026-07-02",60.01,544007],["2026-07-03",58.66,491595],["2026-07-06",58.91,513184],["2026-07-07",59.19,462369],["2026-07-08",53.27,668240],["2026-07-09",49.79,960796],["2026-07-10",47.8,688298],["2026-07-13",45.61,599038],["2026-07-14",47.35,525483],["2026-07-15",47.43,754792],["2026-07-16",49.34,848784],["2026-07-17",46.99,672134],["2026-07-20",42.29,761516],["2026-07-21",43.69,752714],["2026-07-22",43.92,653926],["2026-07-23",46.38,804116],["2026-07-24",43.88,549850],["2026-07-27",45.21,439604],["2026-07-28",44.44,365196],["2026-07-29",46.08,628279],["2026-07-30",45.46,425589],["2026-07-31",45.35,470146],["2026-08-03",45.75,386214],["2026-08-04",46.8,383453],["2026-08-05",47.77,494795],["2026-08-06",47.18,460446],["2026-08-07",47.87,525812],["2026-08-10",48.91,642579],["2026-08-11",48.09,404478],["2026-08-12",48.53,478861],["2026-08-13",47.76,476979],["2026-08-14",48.73,493232],["2026-08-17",48.82,385218],["2026-08-18",47.93,381938],["2026-08-19",46.13,357657],["2026-08-20",46.03,259004],["2026-08-21",48.38,660993],["2026-08-24",49.1,759350],["2026-08-25",47.01,549762],["2026-08-26",47.56,418645],["2026-08-27",48.23,339307],["2026-08-28",50.1,900296],["2026-08-31",49.9,581683],["2026-09-01",49.22,484758],["2026-09-02",47.08,442571],["2026-09-03",46.92,341281]],"sz300014":[["2025-12-09",71.246,321122],["2025-12-10",70.976,300800],["2025-12-11",70.276,387543],["2025-12-12",70.766,333875],["2025-12-15",68.776,307313],["2025-12-16",67.496,271407],["2025-12-17",69.726,338910],["2025-12-18",68.316,245838],["2025-12-19",68.326,274808],["2025-12-22",68.776,274846],["2025-12-23",70.586,548005],["2025-12-24",70.886,386688],["2025-12-25",70.626,348830],["2025-12-26",71.566,636686],["2025-12-29",68.386,637948],["2025-12-30",67.466,566415],["2025-12-31",65.526,452885],["2026-01-05",68.736,623638],["2026-01-06",69.366,490339],["2026-01-07",69.456,572772],["2026-01-08",68.766,430768],["2026-01-09",69.006,429535],["2026-01-12",67.976,737880],["2026-01-13",66.396,711066],["2026-01-14",66.926,723813],["2026-01-15",67.666,549939],["2026-01-16",68.456,614564],["2026-01-19",67.766,447532],["2026-01-20",65.786,579552],["2026-01-21",66.606,483970],["2026-01-22",64.616,686167],["2026-01-23",66.516,666670],["2026-01-26",65.546,606232],["2026-01-27",63.966,613161],["2026-01-28",62.006,666703],["2026-01-29",60.476,472162],["2026-01-30",63.556,882802],["2026-02-02",62.696,588558],["2026-02-03",62.896,405034],["2026-02-04",63.716,414073],["2026-02-05",61.346,418726],["2026-02-06",63.296,511915],["2026-02-09",63.956,361195],["2026-02-10",63.136,263991],["2026-02-11",63.556,308981],["2026-02-12",64.846,451139],["2026-02-13",63.546,314036],["2026-02-24",64.246,353034],["2026-02-25",65.226,494914],["2026-02-26",61.926,750928],["2026-02-27",62.096,310641],["2026-03-02",61.176,390580],["2026-03-03",61.336,661524],["2026-03-04",60.586,371581],["2026-03-05",60.306,342250],["2026-03-06",60.066,277318],["2026-03-09",62.046,592087],["2026-03-10",62.746,408688],["2026-03-11",67.736,1254314],["2026-03-12",68.856,812262],["2026-03-13",67.986,710458],["2026-03-16",69.716,834410],["2026-03-17",68.386,645712],["2026-03-18",67.276,505592],["2026-03-19",66.826,569532],["2026-03-20",70.566,1312173],["2026-03-23",70.896,1145581],["2026-03-24",69.866,897522],["2026-03-25",70.136,678062],["2026-03-26",69.766,743338],["2026-03-27",72.166,915461],["2026-03-30",68.856,856250],["2026-03-31",61.996,1199117],["2026-04-01",62.346,722417],["2026-04-02",62.716,640521],["2026-04-03",59.766,527291],["2026-04-07",60.446,348463],["2026-04-08",64.016,727451],["2026-04-09",64.876,634661],["2026-04-10",68.846,1069911],["2026-04-13",69.786,855004],["2026-04-14",72.066,831474],["2026-04-15",70.086,701804],["2026-04-16",70.746,767818],["2026-04-17",69.616,649309],["2026-04-20",68.726,606163],["2026-04-21",71.746,1066142],["2026-04-22",71.546,803365],["2026-04-23",71.636,725226],["2026-04-24",72.576,783847],["2026-04-27",71.196,681963],["2026-04-28",70.196,560774],["2026-04-29",73.866,947143],["2026-04-30",72.356,746907],["2026-05-06",75.306,1079855],["2026-05-07",71.576,1400095],["2026-05-08",69.666,1107360],["2026-05-11",69.826,998587],["2026-05-12",67.856,828540],["2026-05-13",68.266,609976],["2026-05-14",65.3,772410],["2026-05-15",65.78,755181],["2026-05-18",65.13,570280],["2026-05-19",65.5,538864],["2026-05-20",66.56,799230],["2026-05-21",63.95,741945],["2026-05-22",64.38,451875],["2026-05-25",63.21,557032],["2026-05-26",63.36,485751],["2026-05-27",64.73,867665],["2026-05-28",65.84,701994],["2026-05-29",63.68,642340],["2026-06-01",64.99,697228],["2026-06-02",65.48,634006],["2026-06-03",62.98,714939],["2026-06-04",59.66,795297],["2026-06-05",58.23,598811],["2026-06-08",54.33,675927],["2026-06-09",56.86,559751],["2026-06-10",55.36,378357],["2026-06-11",55.1,459264],["2026-06-12",57.67,741616],["2026-06-15",58.77,500828],["2026-06-16",66.88,1665408],["2026-06-17",67.54,1362640],["2026-06-18",66.66,1076571],["2026-06-22",70.23,1495966],["2026-06-23",67.28,969543],["2026-06-24",67.45,818658],["2026-06-25",66.81,765398],["2026-06-26",62.21,926411],["2026-06-29",64.6,903443],["2026-06-30",65.03,609727],["2026-07-01",63.25,848630],["2026-07-02",61.27,588939],["2026-07-03",61.16,446030],["2026-07-06",59.37,498183],["2026-07-07",58.49,418586],["2026-07-08",56.08,469260],["2026-07-09",56.89,545404],["2026-07-10",54.94,511188],["2026-07-13",51.74,600693],["2026-07-14",52.26,465815],["2026-07-15",52.28,403277],["2026-07-16",51.61,342841],["2026-07-17",51.67,558348],["2026-07-20",50.95,564613],["2026-07-21",54.21,767452],["2026-07-22",53.0,478796],["2026-07-23",55.31,606027],["2026-07-24",53.96,444472],["2026-07-27",55.11,497007],["2026-07-28",54.08,331463],["2026-07-29",53.22,565293],["2026-07-30",54.22,536165],["2026-07-31",54.26,413721],["2026-08-03",54.51,312914],["2026-08-04",54.94,347832],["2026-08-05",55.81,459042],["2026-08-06",54.13,504542],["2026-08-07",54.94,450801],["2026-08-10",55.22,398558],["2026-08-11",56.05,542512],["2026-08-12",56.53,421085],["2026-08-13",55.88,382854],["2026-08-14",56.44,462093],["2026-08-17",57.2,366651],["2026-08-18",56.66,270261],["2026-08-19",55.4,361355],["2026-08-20",55.06,412378],["2026-08-21",55.79,429659],["2026-08-24",55.82,373633],["2026-08-25",54.57,322126],["2026-08-26",55.9,370015],["2026-08-27",55.47,319806],["2026-08-28",54.32,268702],["2026-08-31",52.76,362098],["2026-09-01",52.5,221983],["2026-09-02",51.05,264246],["2026-09-03",51.15,174512]]};
+/* ================================================================
+ * DATA：在线行情（东财fetch → 腾讯fetch → 东财JSONP）+ 腾讯搜索
+ * ================================================================ */
+function symToSecid(sym){
+  const m=sym.slice(0,2),c=sym.slice(2);
+  if(m==='sh')return '1.'+c;if(m==='sz'||m==='bj')return '0.'+c;
+  if(m==='hk')return '116.'+c;if(m==='us')return '105.'+c;return '1.'+c;
+}
+const DATA={
+  async getJSON(url,ms){
+    const ctrl=new AbortController();const to=setTimeout(()=>ctrl.abort(),ms||6000);
+    try{const r=await fetch(url,{signal:ctrl.signal});if(!r.ok)throw new Error('http '+r.status);return await r.json();}finally{clearTimeout(to);}
+  },
+  loadScript(url,charset){
+    return new Promise((resolve,reject)=>{
+      const s=document.createElement('script');let done=false;
+      const timer=setTimeout(()=>{if(done)return;done=true;s.remove();reject(new Error('脚本超时'));},7000);
+      s.onload=()=>{if(done)return;done=true;clearTimeout(timer);resolve();setTimeout(()=>s.remove(),400);};
+      s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);s.remove();reject(new Error('脚本失败'));};
+      if(charset)s.charset=charset;s.src=url;document.head.appendChild(s);
+    });
+  },
+  jsonpGet(baseUrl){
+    return new Promise((resolve,reject)=>{
+      const cb='__jp_'+Date.now()+'_'+Math.floor(Math.random()*1e5);
+      const s=document.createElement('script');let done=false;
+      const cleanup=()=>{clearTimeout(t);s.remove();try{delete window[cb];}catch(e){window[cb]=undefined;}};
+      const timer=setTimeout(()=>{if(done)return;done=true;cleanup();reject(new Error('JSONP超时'));},8000);
+      window[cb]=d=>{if(done)return;done=true;resolve(d);cleanup();};
+      s.onerror=()=>{if(done)return;done=true;cleanup();reject(new Error('JSONP失败'));};
+      s.src=baseUrl+(baseUrl.includes('?')?'&':'?')+'cb='+cb;document.head.appendChild(s);
+    });
+  },
+  klineUrl(secid){return `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${secid}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58&klt=101&fqt=1&end=20500101&lmt=260`;},
+  parseEM(j){
+    if(!j||!j.data||!j.data.klines)throw new Error('无K线');
+    return j.data.klines.map(line=>{const p=line.split(',');return {date:p[0],close:+p[2],vol:Math.round(+p[5]/100)};});
+  },
+  async emKline(secid){return this.parseEM(await this.getJSON(this.klineUrl(secid)));},
+  async emJSONP(secid){return this.parseEM(await this.jsonpGet(this.klineUrl(secid)));},
+  async txKline(sym){
+    const j=await this.getJSON(`https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${sym},day,,,260,qfq`);
+    const node=j.data[sym];const arr=node&&(node.qfqday||node.day);if(!arr||!arr.length)throw new Error('腾讯无数据');
+    return arr.map(r=>({date:r[0],close:+r[2],vol:typeof r[5]==='object'?Math.round(+r[6]||0):Math.round(+r[5])}));
+  },
+  async loadOne(sym,forceOnline){ // 默认优先内嵌秒开；forceOnline 时先在线三通道、失败回退内嵌
+    const emb=EMBEDDED_SERIES[sym]?EMBEDDED_SERIES[sym].map(r=>({date:r[0],close:r[1],vol:r[2]})):null;
+    if(!forceOnline&&emb)return {rows:emb,online:false};
+    const secid=symToSecid(sym);
+    try{try{return {rows:await this.emKline(secid),online:true};}
+      catch(e1){try{return {rows:await this.txKline(sym),online:true};}
+        catch(e2){return {rows:await this.emJSONP(secid),online:true};}}
+    }catch(e){
+      if(emb)return {rows:emb,online:false};
+      throw e;
+    }
+  },
+  // 批量加载并按交易日对齐（inner join）；forceOnline=true 强制在线拉取
+  async batchLoad(syms,onProgress,forceOnline){
+    const recs={},onlineFlags=[];let failed=[];
+    let done=0;
+    const queue=syms.slice();
+    async function worker(){
+      while(queue.length){
+        const sym=queue.shift();
+        try{const r=await DATA.loadOne(sym,forceOnline);recs[sym]=r.rows;onlineFlags.push(r.online);}
+        catch(e){failed.push(sym);}
+        done++;onProgress&&onProgress(done,syms.length,sym);
+        await new Promise(r=>setTimeout(r,0));
+      }
+    }
+    await Promise.all(U.range(4).map(()=>worker()));
+    const okSyms=syms.filter(s=>recs[s]);
+    if(!okSyms.length)throw new Error('全部标的行情获取失败，请检查网络');
+    // 日期交集
+    let dates=recs[okSyms[0]].map(r=>r.date);
+    okSyms.forEach(s=>{const set=new Set(recs[s].map(r=>r.date));dates=dates.filter(d=>set.has(d));});
+    const close={},vol={};
+    okSyms.forEach(s=>{
+      const m=Object.fromEntries(recs[s].map(r=>[r.date,r]));
+      close[s]=dates.map(d=>m[d].close);vol[s]=dates.map(d=>m[d].vol);
+    });
+    return {dates,close,vol,syms:okSyms,failed,online:onlineFlags.some(x=>x)};
+  },
+  async tencentSearch(kw){
+    window.v_hint='';
+    try{await this.loadScript('https://smartbox.gtimg.cn/s3/?t=all&q='+encodeURIComponent(kw),'gbk');}catch(e){return [];}
+    const raw=window.v_hint||'';if(!raw)return [];
+    return raw.split('^').map(seg=>{
+      const p=seg.split('~');if(p.length<5)return null;
+      const mkt=p[0],code=p[1],name=p[2],type=p[4];
+      if(!/^GP/.test(type))return null;
+      const sym=(mkt+code).toLowerCase();
+      const mktName={sh:'沪A',sz:'深A',bj:'北A',hk:'港股',us:'美股'}[mkt]||(mkt||'').toUpperCase();
+      return {code,name,symbol:sym,secid:symToSecid(sym),ind:IND_BY_SYM[sym]?INDUSTRY[IND_BY_SYM[sym]].name:'',
+        type:mktName};
+    }).filter(Boolean).slice(0,12);
+  },
+  guessByCode(kw){
+    kw=String(kw||'').trim().toLowerCase();
+    const mk=(sym,t)=>({code:sym.slice(2),name:'代码直连',symbol:sym,secid:symToSecid(sym),ind:'',type:t});
+    if(/^[69]\d{5}$|^5\d{5}$/.test(kw))return [mk('sh'+kw,'沪A')];
+    if(/^[03]\d{5}$/.test(kw))return [mk('sz'+kw,'深A')];
+    if(/^[48]\d{5}$/.test(kw))return [mk('bj'+kw,'北A')];
+    if(/^\d{5}$/.test(kw))return [mk('hk'+kw,'港股')];
+    return [];
+  },
+  async search(kw){
+    kw=kw.trim();if(!kw)return [];
+    let list=await this.tencentSearch(kw);
+    if(!list.length)list=this.guessByCode(kw);
+    return list;
+  }
+};
+const IND_BY_SYM=Object.fromEntries(NODES.map(n=>[n[0],n[2]]));
+/* ================================================================
+ * ECO：菌群生态模型核心
+ *  绝对定量代理 / CLR成分变换 / 贝叶斯广义Lotka-Volterra /
+ *  VAR(1) / Lasso稀疏网络 / 滞后互相关 / BMA集成 / 后验路径预测
+ * ================================================================ */
+const ECO={
+  WIN:140,
+  /* —— 序列预处理：指数化(绝对定量代理)、相对丰度、对数收益、CLR —— */
+  buildAbundance(close,members,win){
+    const all=close[members[0]];
+    const start=Math.max(0,all.length-win);
+    const dates=members.length?null:null;
+    const T=all.length-start;
+    const Q={},logQ={},R={};
+    members.forEach(s=>{
+      const row=close[s].slice(start);
+      const base=row[0]||1;
+      Q[s]=row.map(v=>v/base);                 // 指数化净值（绝对定量代理：保留总生物量信息）
+      logQ[s]=Q[s].map(v=>Math.log(v));
+      R[s]=Q[s].map((v,i)=>i?Math.log(Q[s][i]/Q[s][i-1]):0);
+    });
+    // 截面相对丰度 x_j(t)=q_j/Σq（成分数据，类比菌群相对丰度）
+    const X=U.range(T).map(t=>{const tot=members.reduce((s,m)=>s+Q[m][t],0)||1;return members.map(m=>Q[m][t]/tot);});
+    // CLR：clr_j(t)=ln q_j - 截面均值 ln q
+    const CLR=U.range(T).map(t=>{const mean=U.mean(members.map(m=>logQ[m][t]));return members.map(m=>logQ[m][t]-mean);});
+    return {T,Q,logQ,R,X,CLR,dateIdx:U.range(T).map(i=>i+start)};
+  },
+  // 贝叶斯线性回归（高斯-共轭先验）：返回后验均值/标准误/z/噪声方差
+  bayesReg(Xrows,y,priorMean,tau){
+    const n=Xrows.length,p=Xrows[0].length;
+    const XtX=Array.from({length:p},()=>new Array(p).fill(0)),Xty=new Array(p).fill(0);
+    for(let t=0;t<n;t++)for(let a=0;a<p;a++){const xt=Xrows[t][a];Xty[a]+=xt*y[t];for(let b=0;b<p;b++)XtX[a][b]+=xt*Xrows[t][b];}
+    // 预岭估计估噪声
+    const pre=XtX.map((row,i)=>row.map((v,j)=>v+(i===j?1e-3*n:0)));
+    const w0=U.solveSPDMulti(pre,[Xty])[0];
+    let rss=0;for(let t=0;t<n;t++){let f=0;for(let a=0;a<p;a++)f+=Xrows[t][a]*w0[a];rss+=(y[t]-f)**2;}
+    const sigma2=Math.max(rss/Math.max(1,n-p-2),1e-8);
+    const A=XtX.map((row,i)=>row.map((v,j)=>v/sigma2+(i===j?tau:0)));
+    const rhs=Xty.map((v,i)=>v/sigma2+tau*(priorMean[i]||0));
+    const postMean=U.solveSPDMulti(A,[rhs])[0];
+    const postVar=U.diagInvSPD(A);
+    const z=postMean.map((m,i)=>m/Math.sqrt(Math.max(postVar[i],1e-10)));
+    return {mean:postMean,z,sigma2,postVar};
+  },
+  // Lasso（迭代软阈值 IST），X 列需预先标准化
+  lasso(Xrows,y,l1,iters=140){
+    const n=Xrows.length,p=Xrows[0].length;let w=new Array(p).fill(0);
+    let colNorm=0;for(let a=0;a<p;a++){let s=0;for(let t=0;t<n;t++)s+=Xrows[t][a]**2;colNorm=Math.max(colNorm,s);}
+    const step=0.9/(colNorm/n+1e-6);
+    const soft=(v,t)=>Math.abs(v)<=t?0:(v>0?v-t:v+t);
+    for(let it=0;it<iters;it++){
+      const grad=new Array(p).fill(0);
+      for(let t=0;t<n;t++){let f=0;for(let a=0;a<p;a++)f+=Xrows[t][a]*w[a];const e=f-y[t];
+        for(let a=0;a<p;a++)grad[a]+=Xrows[t][a]*e;}
+      for(let a=0;a<p;a++)w[a]=soft(w[a]-step*grad[a]/n,step*l1/n);
+    }
+    return w;
+  },
+  // 滞后互相关：返回 j→i 的传导时滞（交易日）与该滞后相关
+  lagPair(ri,rj,maxLag){
+    let best={lag:0,corr:U.pearson(ri.slice(1),rj.slice(0,-1).length?ri.slice(1):ri)};
+    best.corr=U.pearson(ri,rj);
+    for(let L=1;L<=maxLag;L++){
+      const a=ri.slice(L),b=rj.slice(0,rj.length-L);
+      const c=U.pearson(a,b);
+      if(Math.abs(c)>Math.abs(best.corr))best={lag:L,corr:c};
+    }
+    return best;
+  },
+  // 结构先验均值（供应链/竞争关系作为 gLV 系数先验）
+  priorFor(target,members){
+    const nb=neighborsOf(target);const m=new Array(members.length+1).fill(0);
+    members.forEach((s,j)=>{
+      const edge=nb.find(x=>x.other===s);if(!edge)return;
+      const k=edge.strength/3; // 0.33~1
+      m[j+1]=edge.rel==='compete'?-0.12*k:0.12*k;
+    });
+    return m;
+  },
+  /* —— 群落主拟合：对每个成员跑 gLV/VAR/Lasso/相关，BMA 集成交互矩阵 —— */
+  fitCommunity(close,members,opts){
+    opts=opts||{};
+    const win=opts.win||this.WIN,maxLag=opts.maxLag||8;
+    const ab=this.buildAbundance(close,members,win);
+    const n=members.length,T=ab.T;
+    // 结果容器
+    const glvC=Array.from({length:n},()=>new Array(n).fill(0));
+    const glvZ=Array.from({length:n},()=>new Array(n).fill(0));
+    const varC=Array.from({length:n},()=>new Array(n).fill(0));
+    const lasC=Array.from({length:n},()=>new Array(n).fill(0));
+    const corrM=Array.from({length:n},()=>new Array(n).fill(0));
+    const lagM=Array.from({length:n},()=>new Array(n).fill(0));
+    const growth=new Array(n).fill(0),sigmas=new Array(n).fill(0);
+    // 标准化收益矩阵（VAR/Lasso 用）
+    const Rstd={};members.forEach(s=>Rstd[s]=U.zscore(ab.R[s].slice(1)));
+    for(let i=0;i<n;i++){
+      const ti=members[i];
+      // gLV：y_i(t)=r_i+Σ a_ij x_j(t)，t 从 1 起（对齐收益）
+      const Xg=[],yg=[];
+      for(let t=1;t<T;t++){Xg.push([1].concat(ab.X[t-1]));yg.push(ab.R[ti][t]);}
+      const prior=this.priorFor(ti,members);
+      const g=this.bayesReg(Xg,yg,prior,60);
+      growth[i]=g.mean[0];sigmas[i]=g.sigma2;
+      for(let j=0;j<n;j++){glvC[i][j]=g.mean[j+1];glvZ[i][j]=g.z[j+1];}
+      // VAR(1)：y_i(t)=c+Σ B_ij r_j(t-1)，Rstd[k] 对应原始 t=k+1
+      const Xv=[],yv=[];
+      for(let t=2;t<T;t++){Xv.push([1].concat(members.map(m=>Rstd[m][t-2])));yv.push(Rstd[ti][t-1]);}
+      const v=this.bayesReg(Xv,yv,new Array(n+1).fill(0),30);
+      for(let j=0;j<n;j++)varC[i][j]=v.mean[j+1];
+      // Lasso
+      const l=this.lasso(Xv,yv,0.08);
+      for(let j=0;j<n;j++)lasC[i][j]=l[j+1];
+      // CLR 相关 + 滞后
+      for(let j=0;j<n;j++){if(i===j)continue;
+        const ci=ab.CLR.map(row=>row[i]),cj=ab.CLR.map(row=>row[j]);
+        corrM[i][j]=U.pearson(ci,cj);
+        lagM[i][j]=this.lagPair(ab.R[ti].slice(1),ab.R[members[j]].slice(0,-1),maxLag).lag;
+      }
+    }
+    // 归一化函数：按矩阵非对角绝对值的90分位缩放至 [-1,1]
+    const normMat=M=>{
+      const vals=[];for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(i!==j)vals.push(Math.abs(M[i][j]));
+      vals.sort((a,b)=>a-b);const q=vals[Math.floor(vals.length*0.9)]||1;
+      return M.map(row=>row.map(v=>U.clamp(v/(q||1),-1,1)));
+    };
+    const Ng=normMat(glvC),Nv=normMat(varC),Nl=normMat(lasC),Nc=corrM.map(row=>row.map(v=>U.clamp(v,-1,1)));
+    // BMA 模型权重：对每个目标 i，用最后 24 日做一步预测 RMSE
+    const modelMats={glv:Ng,varr:Nv,lass:Nl,corr:Nc};
+    const W=Array.from({length:n},()=>new Array(n).fill(0));
+    const modelWeight=[];
+    for(let i=0;i<n;i++){
+      const ti=members[i],testN=24;
+      const rmses={glv:0,varr:0,lass:0,corr:0};
+      let cnt=0;
+      for(let t=T-testN;t<T;t++){
+        if(t<2)continue;cnt++;
+        const actual=ab.R[ti][t];
+        const xg=[1].concat(ab.X[t-1]),xr=[1].concat(members.map(m=>Rstd[m][t-1]));
+        const pred={glv:0,varr:0,lass:0,corr:0};
+        for(let j=0;j<n;j++){pred.glv+=Ng[i][j]*xg[j+1]*0.02;pred.varr+=Nv[i][j]*xr[j+1]*0.01;pred.lass+=Nl[i][j]*xr[j+1]*0.01;pred.corr+=Nc[i][j]*ab.R[members[j]][t-1];}
+        Object.keys(pred).forEach(k=>rmses[k]+=(pred[k]-actual)**2);
+      }
+      Object.keys(rmses).forEach(k=>rmses[k]=Math.sqrt(rmses[k]/Math.max(1,cnt)));
+      const entries=Object.entries(rmses);const mn=Math.min(...entries.map(e=>e[1]));
+      const ew={};let zsum=0;entries.forEach(([k,v])=>{ew[k]=Math.exp(-(v-mn)*40);zsum+=ew[k];});
+      Object.keys(ew).forEach(k=>ew[k]/=zsum);modelWeight.push(ew);
+      for(let j=0;j<n;j++)W[i][j]=ew.glv*Ng[i][j]+ew.varr*Nv[i][j]+ew.lass*Nl[i][j]+ew.corr*Nc[i][j];
+    }
+    // 关键种：加权生态位宽度（出+入强度）
+    const keystone=members.map((s,i)=>{
+      let out=0,inc=0;
+      for(let j=0;j<n;j++)if(i!==j){out+=Math.abs(W[i][j]);inc+=Math.abs(W[j][i]);}
+      return {sym:s,score:out+inc,out,inc};
+    }).sort((a,b)=>b.score-a.score);
+    return {members,ab,W,glvC,glvZ,varC,lasC,corrM,lagM,growth,sigmas,modelWeight:U.range(n).map(()=>null),keystone,_mw:modelWeight};
+  },
+  /* —— 滚动窗口关系演化：对每个时间窗重拟合，得到 W(t) 时间序列 —— */
+  rollingFit(close,members,dates,opts){
+    opts=opts||{};const win=opts.win||90,step=opts.step||20;
+    const T=close[members[0]].length,frames=[];
+    const fitAt=end=>{
+      const c={};members.forEach(s=>c[s]=close[s].slice(end-win,end));
+      const f=this.fitCommunity(c,members,{win});
+      return {date:dates[end-1],end,W:f.W,lag:f.lagM,glvZ:f.glvZ,key:f.keystone.map(k=>({sym:k.sym,score:k.score}))};
+    };
+    for(let end=win;end<=T;end+=step)frames.push(fitAt(end));
+    if(!frames.length||frames[frames.length-1].end!==T)frames.push(fitAt(T));
+    return frames;
+  },
+  /* —— 行业级聚合：把公司级 W 聚合为行业间平均作用矩阵 Agg[K][L] —— */
+  aggregateIndustry(members,W,keyOf){
+    const groups={};members.forEach((s,i)=>{const k=keyOf(s);(groups[k]=groups[k]||[]).push(i);});
+    const keys=Object.keys(groups),Agg={},Cnt={};
+    keys.forEach(a=>{Agg[a]={};Cnt[a]={};keys.forEach(b=>{
+      let sum=0,c=0;groups[a].forEach(i=>groups[b].forEach(j=>{if(i!==j){sum+=W[i][j];c++;}}));
+      Agg[a][b]=c?sum/c:0;Cnt[a][b]=c;
+    });});
+    return {keys,Agg,Cnt};
+  },
+  /* —— 后验路径预测：gLV 欧拉积分 + 参数后验蒙特卡洛 —— */
+  forecast(close,members,fit,center,H,nSim){
+    nSim=nSim||120;
+    const ab=fit.ab,n=members.length,ci=members.indexOf(center);
+    const T=ab.T;
+    const lastClose=close[center][close[center].length-1];
+    // 成员漂移（自身 AR 均值）
+    const mu=members.map(s=>U.mean(ab.R[s].slice(-30)));
+    // 重新拟合 center 的 gLV 后验（供抽样）
+    const Xg=[],yg=[];
+    for(let t=1;t<T;t++){Xg.push([1].concat(ab.X[t-1]));yg.push(ab.R[center][t]);}
+    const post=this.bayesReg(Xg,yg,this.priorFor(center,members),60);
+    const sd=Math.sqrt(post.sigma2);
+    // 标准正态抽样（Box-Muller）
+    const rn=()=>{let u=0;while(!u)u=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*Math.random());};
+    const paths=[];
+    // 预测期采用「静态生态位」假设：邻居相对丰度维持末期水平（避免多物种指数外推发散）
+    const x0=ab.X[T-1];
+    // 确定性日漂移（后验均值）；区间用 √H 经验误差尺度（参数/模型不确定性并入放大残差，避免共线性下 O(H) 发散）
+    const drift0=post.mean[0]+U.range(n).reduce((s,j)=>s+post.mean[j+1]*x0[j],0);
+    const sdU=sd*1.15;
+    for(let sim=0;sim<nSim;sim++){
+      const logPath=new Array(H).fill(0);let cum=0;
+      for(let h=0;h<H;h++){cum+=drift0+sdU*rn();logPath[h]=cum;}
+      paths.push(logPath.map(l=>lastClose*Math.exp(l)));
+    }
+    const pct=q=>h=>{const col=paths.map(p=>p[h]).sort((a,b)=>a-b);return col[Math.floor(col.length*q)];};
+    const p50=U.range(H).map(pct(.5)),p10=U.range(H).map(pct(.1)),p90=U.range(H).map(pct(.9));
+    // 贡献分解：邻居贡献符号严格跟随集成权重 W（正=推动/负=拖累），内生项平衡总预测变动 L（可加）
+    const L=Math.log(p50[H-1]/lastClose);
+    const meanX=U.range(n).map(j=>U.mean(U.range(T).slice(-40).map(t=>ab.X[t][j])));
+    const k=0.01*Math.sqrt(H); // 集成强度→对数收益标定（随预测周期√H 缩放）
+    const neigh=members.map((s,j)=>j===ci?0:fit.W[ci][j]*meanX[j]*k);
+    const neighSum=U.sum(neigh);
+    const contrib=members.map((s,j)=>{
+      const logC=j===ci?L-neighSum:neigh[j];
+      return {sym:s,logC,priceC:lastClose*(Math.exp(logC)-1),self:j===ci};
+    });
+    return {lastClose,p10,p50,p90,contrib,L,target:p50[H-1],lo:p10[H-1],hi:p90[H-1],
+      targetRet:p50[H-1]/lastClose-1};
+  },
+  // 行业指数序列（成员等权净值）
+  industryIndex(close,members){
+    const rs=members.map(s=>close[s].map((v,i)=>i?Math.log(close[s][i]/close[s][i-1]):0));
+    const T=close[members[0]].length;const out=new Array(T).fill(1);
+    for(let t=1;t<T;t++){const m=U.mean(members.map((s,k)=>rs[k][t]));out[t]=out[t-1]*Math.exp(m);}
+    return out;
+  }
+};
+
+/* ================================================================
+ * APP：状态 / 图表 / 四大视图
+ * ================================================================ */
+const $=id=>document.getElementById(id);
+const C={txt:'#9db5a8',txt2:'#6b8578',line:'#24382e',axis:'#314c3f',up:'#f0484e',down:'#1fbf85',
+  pos:'#58c8f0',neg:'#f0a048',gold:'#e6b34d',accent:'#4fd69c',self:'#8fa89b'};
+const S={view:'atlas',center:'sh601615',horizon:10,atlasInd:'all',atlasRel:'all',atlasLayout:'force',
+  indSel:'wind',indMulti:['wind'],cache:{},busy:false};
+const CHARTS={};
+function chart(id){
+  if(CHARTS[id])return CHARTS[id];
+  const c=echarts.init($(id),null,{renderer:'canvas'});CHARTS[id]=c;return c;
+}
+const AX={axisLine:{lineStyle:{color:C.axis}},axisLabel:{color:C.txt2,fontSize:11},
+  axisTick:{show:false},splitLine:{lineStyle:{color:C.line,type:'dashed'}}};
+const TIP={backgroundColor:'#111e18',borderColor:C.axis,textStyle:{color:'#dcebe2',fontSize:12},
+  confine:true};
+function loading(txt,pct){const m=$('loadingMask');m.classList.add('show');$('loadingTxt').textContent=txt||'加载中';
+  if(pct!=null)$('loadingBar').style.width=pct+'%';}
+function loaded(){$('loadingMask').classList.remove('show');}
+let toastT;function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+function setSrc(online){$('srcDot').className=online?'dot-on':'dot-off';
+  $('srcText').textContent=online?'在线实时行情（腾讯/东财）':'内置群落真实日K（离线演示）';}
+// 确定某公司的分析群落：自身 + 图谱1度邻居（≤15），外部股兜底内嵌群落
+function communityOf(sym){
+  const nb=neighborsOf(sym);
+  let members=[sym].concat(nb.map(x=>x.other));
+  members=[...new Set(members)].slice(0,15);
+  if(members.length<3){ // 图谱外股票：并入同行业，再兜底内嵌群落
+    const ind=IND_BY_SYM[sym];
+    if(ind)NODES.filter(n=>n[2]===ind).slice(0,12).forEach(n=>{if(!members.includes(n[0]))members.push(n[0]);});
+    if(members.length<3)Object.keys(EMBEDDED_SERIES).forEach(s=>{if(members.length<13&&!members.includes(s))members.push(s);});
+  }
+  return members;
+}
+function relLabel(nb){
+  if(nb.rel==='compete')return '竞争者（生态位重叠）';
+  return nb.dir==='in'?'上游供应商（供体）':'下游客户（受体）';
+}
+function relTag(nb){return nb.rel==='compete'?'竞争':(nb.dir==='in'?'上游':'下游');}
+
+/* ---------- 视图1：产业生态图谱 ---------- */
+const Atlas={
+  render(){
+    // 九大产业链快捷导航卡
+    const grid=$('atlasChainGrid');
+    if(grid&&!grid.children.length){
+      grid.innerHTML=Object.entries(INDUSTRY).map(([k,v])=>{
+        const n=NODES.filter(x=>x[2]===k).length;
+        const e=EDGES.filter(x=>IND_BY_SYM[x[0]]===k&&IND_BY_SYM[x[1]]===k).length;
+        return `<button class="chain-card" style="--cc:${v.color}" data-k="${k}">
+          <b><i class="cc-dot"></i>${v.name}</b><span>${n} 家公司 · ${e} 条生态关系</span></button>`;
+      }).join('');
+      grid.onclick=e=>{const b=e.target.closest('.chain-card');if(b)App.openChain(b.dataset.k);};
+    }
+    // 行业 chips
+    if(!$('atlasIndChips').children.length){
+      const chips=[['all','全部群落']].concat(Object.entries(INDUSTRY).map(([k,v])=>[k,v.name]));
+      $('atlasIndChips').innerHTML=chips.map(([k,n],i)=>`<button class="chip ${i===0?'on':''}" data-k="${k}">${n}</button>`).join('');
+      $('atlasIndChips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;
+        $('atlasIndChips').querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+        S.atlasInd=b.dataset.k;this.draw();};
+    }
+    this.draw();
+    // 统计
+    const deg={};EDGES.forEach(e=>{deg[e[0]]=(deg[e[0]]||0)+1;deg[e[1]]=(deg[e[1]]||0)+1;});
+    const upN=EDGES.filter(e=>e[2]==='up').length,cpN=EDGES.length-upN;
+    const key=Object.entries(deg).sort((a,b)=>b[1]-a[1]).slice(0,3)
+      .map(([s])=>NODE_MAP[s].name).join('、');
+    $('atlasSummary').innerHTML=[
+      ['物种（上市公司）',NODES.length+' 家'],['生态关系',EDGES.length+' 条'],
+      ['供应链共生',upN+' 条'],['竞争生态位重叠',cpN+' 条'],
+      ['行业群落',Object.keys(INDUSTRY).length+' 个'],['核心关键种',key]
+    ].map(([k,v])=>`<div class="sum-card"><span>${k}</span><b>${v}</b></div>`).join('');
+  },
+  draw(){
+    const ind=S.atlasInd,rel=S.atlasRel;
+    let nodes=NODES.filter(n=>ind==='all'||n[2]===ind);
+    const ids=new Set(nodes.map(n=>n[0]));
+    let edges=EDGES.filter(e=>ids.has(e[0])&&ids.has(e[1])&&(rel==='all'||e[2]===rel));
+    const keep=new Set(nodes.map(n=>n[0]));edges.forEach(e=>{keep.add(e[0]);keep.add(e[1]);});
+    nodes=NODES.filter(n=>keep.has(n[0]));
+    const deg={};edges.forEach(e=>{deg[e[0]]=(deg[e[0]]||0)+1;deg[e[1]]=(deg[e[1]]||0)+1;});
+    const dn=nodes.map(n=>deg[n[0]]||0),mx=Math.max(...dn,1);
+    const indKeys=Object.keys(INDUSTRY);
+    const data=nodes.map(n=>({id:n[0],name:n[1],symbolSize:10+22*Math.sqrt((deg[n[0]]||0)/mx),
+      category:indKeys.indexOf(n[2]),itemStyle:{color:INDUSTRY[n[2]].color,borderColor:'#0a1210',borderWidth:1},
+      label:{show:(deg[n[0]]||0)>=3},value:deg[n[0]]||0}));
+    const links=edges.map(e=>({source:e[0],target:e[1],rel:e[2],strength:e[3],
+      lineStyle:{color:e[2]==='compete'?C.neg:C.pos,width:0.6+e[3]*0.9,
+        type:e[2]==='compete'?'dashed':'solid',opacity:.72},curveness:.08}));
+    const cats=indKeys.map(k=>({name:INDUSTRY[k].name,itemStyle:{color:INDUSTRY[k].color}}));
+    const opt={tooltip:{...TIP,formatter:p=>p.dataType==='node'
+      ?`<b>${p.data.name}</b><br/>${INDUSTRY[p.data.category].name}<br/>关系度（生态位宽度）：${p.data.value}`
+      :`${NODE_MAP[p.data.source].name} → ${NODE_MAP[p.data.target].name}<br/>${p.data.rel==='compete'?'竞争关系':'供应链'} · 强度${p.data.strength}`},
+      legend:[{data:cats.map(c=>c.name),textStyle:{color:C.txt},bottom:0,icon:'circle',itemWidth:9,itemHeight:9,type:'scroll'}],
+      series:[{type:'graph',layout:S.atlasLayout==='force'?'force':'circular',roam:true,draggable:true,
+        data,categories:cats,links,
+        force:{repulsion:320,edgeLength:[70,150],gravity:.12,layoutAnimation:false},
+        circular:{rotateLabel:true},
+        label:{color:'#dcebe2',fontSize:10,position:'right'},
+        emphasis:{focus:'adjacency',lineStyle:{width:3,opacity:1},label:{fontSize:12}},
+        lineStyle:{color:'#58c8f0'}}]};
+    const c=chart('atlasChart');c.setOption(opt,true);
+    c.off('click');c.on('click',p=>{if(p.dataType==='node')App.openCompany(p.data.id);});
+  },
+  bindSegs(){
+    $('atlasRelSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+      $('atlasRelSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+      S.atlasRel=b.dataset.r;this.draw();};
+    $('atlasLayoutSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+      $('atlasLayoutSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+      S.atlasLayout=b.dataset.l;this.draw();};
+  }
+};
+
+/* ---------- 视图2：公司生态位透视（核心） ---------- */
+const Niche={
+  async load(sym,forceOnline,silent){
+    if(S.busy)return;S.busy=true;
+    const node=NODE_MAP[sym];
+    const prog=(m,p)=>{if(!silent)loading(m,p);};
+    $('ncName').textContent=node?node.name:'外部标的 '+sym;
+    $('ncCode').textContent=`${sym} · ${node?INDUSTRY[node.ind].name:'图谱外物种'} · 贝叶斯 gLV 生态位分析中…`;
+    prog(forceOnline?'联网实时采集群落行情并拟合生态模型':'采集群落物种行情并拟合生态模型',8);
+    try{
+      const members=communityOf(sym);
+      const batch=await DATA.batchLoad(members,(d,t,s)=>prog(`采集群落行情 ${d}/${t}`,8+Math.round(d/t*40)),forceOnline);
+      if(!batch.syms.includes(sym)){if(!silent)loaded();toast('未取到该标的行情：离线演示仅内置 12 只可分析，联网后可分析任意 A 股');S.busy=false;return;}
+      setSrc(batch.online);
+      prog('绝对定量 / CLR 成分变换',50);await new Promise(r=>setTimeout(r,20));
+      const fit=ECO.fitCommunity(batch.close,batch.syms);
+      prog('贝叶斯 gLV + VAR + Lasso + BMA 集成',72);await new Promise(r=>setTimeout(r,20));
+      const fc=ECO.forecast(batch.close,batch.syms,fit,sym,S.horizon,160);
+      prog('后验路径蒙特卡洛与贡献分解',92);
+      this.state={sym,members:batch.syms,close:batch.close,dates:batch.dates,fit,fc};
+      this.render();
+      if(!silent)loaded();
+    }catch(e){if(!silent)loaded();toast('分析失败：'+e.message);console.error(e);}
+    S.busy=false;
+  },
+  render(){
+    const {sym,members,close,dates,fit,fc}=this.state;
+    const node=NODE_MAP[sym],ci=members.indexOf(sym),n=members.length;
+    $('ncCode').textContent=`${sym} · ${node?INDUSTRY[node.ind].name:'图谱外物种'} · 群落 ${n} 物种 · 样本 ${dates.length} 日 · ${S.horizon} 日预测`;
+    // 指标卡
+    const keyRank=fit.keystone.findIndex(k=>k.sym===sym)+1;
+    const lags=members.map((s,j)=>j===ci?null:fit.lagM[ci][j]).filter(x=>x!=null);
+    const avgLag=U.mean(lags).toFixed(1);
+    const ret=fc.targetRet*100;
+    $('ncMetrics').innerHTML=[
+      ['最新价',fc.lastClose.toFixed(2)],
+      [S.horizon+'日预测中位',fc.target.toFixed(2)],
+      ['预期涨跌',(ret>=0?'+':'')+ret.toFixed(2)+'%',ret>=0?C.up:C.down],
+      ['80%区间',fc.lo.toFixed(2)+' ~ '+fc.hi.toFixed(2)],
+      ['关键种序位','第 '+keyRank+' / '+n],
+      ['平均传导时效',avgLag+' 日']
+    ].map(x=>`<div class="metric"><span>${x[0]}</span><b style="color:${x[2]||'#dcebe2'}">${x[1]}</b></div>`).join('');
+    this.drawNet();this.drawTable();this.drawPred();this.drawContrib();this.writeNote();
+  },
+  // 生态位关系网：上游左弧 / 中心 / 下游右弧 / 竞争下弧
+  drawNet(){
+    const {sym,members,fit}=this.state,ci=members.indexOf(sym);
+    const nbAll=neighborsOf(sym);
+    const ups=[],downs=[],comps=[];
+    members.forEach((s,j)=>{if(j===ci)return;const nb=nbAll.find(x=>x.other===s);
+      if(nb&&nb.rel==='compete')comps.push({s,j,nb});else if(nb&&nb.dir==='in')ups.push({s,j,nb});
+      else if(nb&&nb.dir==='out')downs.push({s,j,nb});
+      else (fit.W[ci][j]>=0?ups:comps).push({s,j,nb:null});});
+    const place=(arr,cx,cy,rx,ry,a0,a1)=>arr.forEach((o,k)=>{
+      const a=a0+(a1-a0)*(arr.length===1?.5:k/(arr.length-1));
+      o.x=cx+rx*Math.cos(a);o.y=cy+ry*Math.sin(a);});
+    place(ups,0,0,340,180,Math.PI*0.65,Math.PI*1.35);    // 左侧
+    place(downs,0,0,340,180,-Math.PI*0.35,Math.PI*0.35); // 右侧
+    place(comps,0,0,300,200,Math.PI*0.35,Math.PI*0.65);  // 下方
+    const all=[...ups,...downs,...comps];
+    const nodes=[{name:NODE_MAP[sym]?NODE_MAP[sym].name:sym,x:0,y:0,symbolSize:58,
+      itemStyle:{color:C.accent,borderColor:'#0a1210',borderWidth:2},label:{fontSize:14,fontWeight:700}}];
+    const links=[];
+    all.forEach(o=>{const w=fit.W[ci][o.j];const pos=w>=0;
+      nodes.push({name:NODE_MAP[o.s]?NODE_MAP[o.s].name:o.s,x:o.x,y:o.y,
+        symbolSize:24+22*Math.min(1,Math.abs(w)),itemStyle:{color:pos?C.pos:C.neg,opacity:.92},
+        label:{fontSize:11}});
+      links.push({source:NODE_MAP[sym]?NODE_MAP[sym].name:sym,target:NODE_MAP[o.s]?NODE_MAP[o.s].name:o.s,
+        lineStyle:{color:pos?C.pos:C.neg,width:1+3*Math.min(1,Math.abs(w)),
+          type:o.nb&&o.nb.rel==='compete'?'dashed':'solid',opacity:.7},
+        label:{show:Math.abs(w)>.35,formatter:w.toFixed(2),color:C.txt2,fontSize:10}});});
+    chart('nicheChart').setOption({tooltip:{...TIP,formatter:p=>p.dataType==='node'?p.name:''},
+      series:[{type:'graph',layout:'none',coordinateSystem:null,roam:true,data:nodes,links,
+        label:{color:'#dcebe2',position:'right'},emphasis:{focus:'adjacency'},
+        lineStyle:{curveness:.1}}]},true);
+  },
+  drawTable(){
+    const {sym,members,fit,fc}=this.state,ci=members.indexOf(sym);
+    const nbAll=neighborsOf(sym);
+    const rows=members.map((s,j)=>{if(j===ci)return null;const nb=nbAll.find(x=>x.other===s);
+      const w=fit.W[ci][j],z=fit.glvZ[ci][j],lag=fit.lagM[ci][j],ct=fc.contrib.find(c=>c.sym===s);
+      return {s,j,w,z,lag,ct,nb,node:NODE_MAP[s]};}).filter(Boolean)
+      .sort((a,b)=>Math.abs(b.w)-Math.abs(a.w));
+    const wmax=Math.max(...rows.map(r=>Math.abs(r.w)),.01);
+    $('ncRelTable').innerHTML=`<table class="data-tbl"><thead><tr>
+      <th>关联企业</th><th>关系</th><th>生态作用权重</th><th>传导时效</th><th>显著性 z</th><th>${S.horizon}日贡献</th></tr></thead><tbody>${
+      rows.map(r=>{const pos=r.w>=0;const pct=Math.round(Math.abs(r.w)/wmax*100);
+        return `<tr><td><b>${r.node?r.node.name:r.s}</b><span class="dim"> ${r.s}</span></td>
+        <td><span class="tag ${r.nb&&r.nb.rel==='compete'?'tag-c':(r.nb?'tag-u':'tag-o')}">${r.nb?relTag(r.nb):(pos?'数据协同':'数据抑制')}</span></td>
+        <td><div class="wbar"><i style="width:${pct}%;background:${pos?C.pos:C.neg};${pos?'':'margin-left:auto'}"></i></div><span class="dim">${pos?'+':''}${r.w.toFixed(3)}</span></td>
+        <td>${r.lag} 日</td><td class="${Math.abs(r.z)>=1.96?'sig':''}">${r.z.toFixed(2)}</td>
+        <td style="color:${r.ct.priceC>=0?C.up:C.down}">${r.ct.priceC>=0?'+':''}${r.ct.priceC.toFixed(3)} 元</td></tr>`;}).join('')
+    }</tbody></table>`;
+  },
+  drawPred(){
+    const {sym,close,dates,fc}=this.state,H=S.horizon;
+    const hist=close[sym].slice(-60);const hd=dates.slice(-60);
+    const xlab=hd.concat(U.range(H).map(h=>'T+'+(h+1)));
+    const last=hist[hist.length-1];
+    const p50=[last].concat(fc.p50),p10=[last].concat(fc.p10),p90=[last].concat(fc.p90);
+    const gap=U.range(60+H+1).map(()=>null);gap[59]=last;
+    const bandLo=gap.slice(),bandHi=gap.slice();
+    U.range(H+1).forEach(h=>{if(h===0){bandLo[59]=last;bandHi[59]=last;}else{bandLo[59+h]=p10[h];bandHi[59+h]=p90[h];}});
+    chart('ncPredChart').setOption({tooltip:{...TIP,trigger:'axis'},
+      legend:{data:['历史收盘','预测中位','P10-P90 后验区间'],textStyle:{color:C.txt},top:0,icon:'roundRect',itemWidth:14,itemHeight:8},
+      grid:{left:52,right:24,top:38,bottom:52},
+      xAxis:{type:'category',data:xlab,...AX,axisLabel:{...AX.axisLabel,interval:Math.floor(xlab.length/8)}},
+      yAxis:{type:'value',scale:true,...AX},
+      dataZoom:[{type:'inside'},{type:'slider',height:16,bottom:14,backgroundColor:'#111e18',
+        fillerColor:'rgba(79,214,156,.15)',borderColor:C.line,textStyle:{color:C.txt2}}],
+      series:[
+        {name:'P10-P90 后验区间',type:'line',data:bandHi,lineStyle:{opacity:0},stack:'band',symbol:'none',silent:true},
+        {name:'P10-P90 后验区间',type:'line',data:bandLo.map((v,i)=>v==null?null:(bandHi[i]-v)),lineStyle:{opacity:0},
+          areaStyle:{color:'rgba(230,179,77,.16)'},stack:'band',symbol:'none',silent:true},
+        {name:'历史收盘',type:'line',data:hist.concat(U.range(H).fill(null)),smooth:true,symbol:'none',
+          lineStyle:{color:C.accent,width:2}},
+        {name:'预测中位',type:'line',data:gap.map((v,i)=>i<59?null:(i===59?last:p50[i-59])),
+          lineStyle:{color:C.gold,width:2,type:'dashed'},symbol:'none',smooth:true}
+      ]},true);
+    $('ncPredHint').textContent=`基于 160 条后验蒙特卡洛路径：${S.horizon} 日期末价格中位 ${fc.target.toFixed(2)}，P10 ${fc.lo.toFixed(2)} / P90 ${fc.hi.toFixed(2)}（区间随 √H 放大，反映过程不确定性）`;
+  },
+  drawContrib(){
+    const {sym,fc}=this.state;
+    const rows=fc.contrib.slice().sort((a,b)=>a.logC-b.logC);
+    chart('ncContribChart').setOption({tooltip:{...TIP,trigger:'axis',axisPointer:{type:'shadow'},
+      formatter:p=>{const d=p[0];return `${d.name}<br/>对数贡献 ${(d.value/ fc.lastClose*100).toFixed(2)}% 量级<br/>折算 ${d.data.v.toFixed(3)} 元`;}},
+      grid:{left:96,right:30,top:16,bottom:30},
+      xAxis:{type:'value',...AX},
+      yAxis:{type:'category',data:rows.map(c=>c.self?'自身动力学':(NODE_MAP[c.sym]?NODE_MAP[c.sym].name:c.sym)),...AX},
+      series:[{type:'bar',data:rows.map(c=>({value:c.logC,v:c.priceC,
+        itemStyle:{color:c.self?C.self:(c.logC>=0?C.pos:C.neg)}})),barWidth:14,
+        label:{show:true,position:'right',color:C.txt2,fontSize:10,formatter:p=>p.data.v>=0?'+':''&&''}}]},true);
+  },
+  writeNote(){
+    const {sym,members,fit,fc}=this.state,ci=members.indexOf(sym);
+    const nm=s=>NODE_MAP[s]?NODE_MAP[s].name:s;
+    const pairs=members.map((s,j)=>j===ci?null:{s,j,w:fit.W[ci][j]}).filter(Boolean)
+      .sort((a,b)=>Math.abs(b.w)-Math.abs(a.w));
+    const pos=pairs.filter(p=>p.w>0.1),neg=pairs.filter(p=>p.w<-0.1);
+    const topPos=pos[0],topNeg=neg[0];
+    const annG=(Math.exp(U.mean(fit.growth)*244)-1)*100;
+    const key=fit.keystone[0];
+    const ret=fc.targetRet*100;
+    // 双向关系生态学定性
+    function ecoType(a,b){const w1=fit.W[a][b],w2=fit.W[b][a];
+      if(w1>.08&&w2>.08)return '互利共生（双向促进）';
+      if(w1>.08&&w2<-.08||w1<-.08&&w2>.08)return '偏利/偏害（作用不对称）';
+      if(w1<-.08&&w2<-.08)return '竞争拮抗（双向抑制）';return '中性偏利';}
+    const relTxt=pairs.slice(0,3).map(p=>{const t=ecoType(ci,p.j);
+      return `<li><b>${nm(p.s)}</b> 与目标物种呈 <span style="color:${p.w>=0?C.pos:C.neg}">${t}</span>，集成作用系数 ${p.w>=0?'+':''}${p.w.toFixed(3)}，传导时滞 ${fit.lagM[ci][p.j]} 个交易日</li>`;}).join('');
+    const dir=ret>=0?'上行（群落支持目标物种生物量扩张）':'下行（目标物种生态位承压、生物量收缩）';
+    $('ncEcoNote').innerHTML=`
+      <p><b>① 群落演替动能：</b>该群落 ${members.length} 个物种的平均内禀增长率年化约 <b>${annG>=0?'+':''}${annG.toFixed(1)}%</b>，
+      群落整体处于${annG>=0?'「演替扩张」（资源充裕、物种生物量趋势性增长）':'「逆行演替」（环境承载力收紧、整体生物量回落）'}阶段；群落关键种（生态位宽度最大）为 <b>${nm(key.sym)}</b>，其波动对全群落具有最强外溢效应。</p>
+      <p><b>② 目标物种的「共生菌」与「致病菌」：</b></p>
+      <ul>${relTxt||'<li>当前群落内未检出强相互作用，目标物种主要受自身动力学支配</li>'}</ul>
+      <p><b>③ 为什么这样预测——生态学归因：</b>未来 ${S.horizon} 日目标物种价格路径预计<b style="color:${ret>=0?C.up:C.down}">${dir}</b>，期末中位价 <b>${fc.target.toFixed(2)}</b>（${ret>=0?'+':''}${ret.toFixed(2)}%）。
+      ${topPos?`最强「益生」供体为 <b>${nm(topPos.s)}</b>（作用 +${topPos.w.toFixed(2)}），其生物量扩张通过供应链共生关系为目标提供营养级联式正反馈；`:''}
+      ${topNeg?`最主要「生态位竞争者/抑制菌」为 <b>${nm(topNeg.s)}</b>（作用 ${topNeg.w.toFixed(2)}），二者争夺同一资源位（订单/资金/估值），其相对强势会抑制目标物种的生物量。`:''}
+      分解到价格：目标变动主要由<b>自身动力学</b>（内禀增长项 r，即趋势与均值回复）与上述邻体作用共同决定，贡献条形图给出了每个物种折算到期末价格的边际贡献（元）。</p>
+      <p class="dim" style="margin-top:8px">类比说明：在肠道菌群中，一株菌的丰度由自身繁殖率 r、与其他菌的交互 a_ij（交叉喂养为正、营养竞争/抑菌为负）及环境扰动共同决定——这正是广义 Lotka–Volterra 方程；本模型把「菌种丰度」对应为「经绝对定量代理与 CLR 变换后的公司价格生物量」，把「交叉喂养/竞争」对应为「供应链/竞争关系下的价格联动」，从而用同一套生态学动力学解释和预测股价。</p>`;
+  },
+  bindSegs(){
+    $('ncHorizonSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+      $('ncHorizonSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+      S.horizon=+b.dataset.h;if(this.state){const {sym,members,close,fit}=this.state;
+        this.state.fc=ECO.forecast(close,members,fit,sym,S.horizon,160);this.render();}};
+    $('ncRefresh').onclick=()=>{if(this.state)this.load(this.state.sym,true);};
+  }
+};
+
+/* ---------- 视图3：行业群落模型 ---------- */
+const Industry={
+  idxSeries:{},idxDates:{},
+  renderChips(){
+    $('indChips').innerHTML=Object.entries(INDUSTRY).map(([k,v])=>
+      `<button class="chip ${S.indMulti.includes(k)?'on':''}" data-k="${k}">${v.name}</button>`).join('');
+    $('indChips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.k;
+      const i=S.indMulti.indexOf(k);
+      if(i>=0){if(S.indMulti.length<=1){toast('至少保留 1 个行业');return;}S.indMulti.splice(i,1);}
+      else{if(S.indMulti.length>=6){toast('最多同时对比 6 个行业');return;}S.indMulti.push(k);}
+      this.renderChips();this.reload();
+    };
+  },
+  reload(){
+    const keys=S.indMulti;S.indSel=keys[0];App._indLoaded=keys.join(',');
+    return keys.length===1?this.load(keys[0]):this.loadMulti(keys);
+  },
+  async load(key){
+    S.indSel=key;App._indLoaded=key;
+    const members=NODES.filter(n=>n[2]===key).map(n=>n[0]);
+    if(!members.length){toast('该行业暂无图谱物种');return;}
+    loading(`拟合「${INDUSTRY[key].name}」群落模型`,10);
+    try{
+      const batch=await DATA.batchLoad(members,(d,t)=>loading(`行业群落行情 ${d}/${t}`,10+Math.round(d/t*50)));
+      setSrc(batch.online);
+      loading('行业 gLV / 共现 / 关键种拟合',70);
+      const fit=ECO.fitCommunity(batch.close,batch.syms);
+      this.state={mode:'single',key,members:batch.syms,close:batch.close,dates:batch.dates,fit};
+      this.idxSeries[key]=ECO.industryIndex(batch.close,batch.syms);this.idxDates[key]=batch.dates;
+      $('indCrossNote').innerHTML='';
+      this.drawSummary();this.drawNet();this.drawHeat();this.drawBetween();
+      loaded();
+    }catch(e){loaded();toast('行业模型拟合失败：'+e.message);}
+  },
+  async loadMulti(keys){
+    loading(`拟合 ${keys.length} 个行业的跨群落关系`,10);
+    try{
+      let members=keys.flatMap(k=>NODES.filter(n=>n[2]===k).map(n=>n[0]));
+      members=[...new Set(members)];
+      const batch=await DATA.batchLoad(members,(d,t)=>loading(`跨行业行情 ${d}/${t}`,10+Math.round(d/t*45)));
+      setSrc(batch.online);
+      loading('跨行业 gLV / 行业间作用聚合',68);
+      const fit=ECO.fitCommunity(batch.close,batch.syms);
+      const agg=ECO.aggregateIndustry(batch.syms,fit.W,s=>NODE_MAP[s].ind);
+      keys.forEach(k=>{ // 累积各行业指数用于叠加
+        const ss=batch.syms.filter(s=>NODE_MAP[s].ind===k);
+        if(ss.length){const c={};ss.forEach(s=>c[s]=batch.close[s]);this.idxSeries[k]=ECO.industryIndex(c,ss);this.idxDates[k]=batch.dates;}
+      });
+      this.state={mode:'multi',keys,members:batch.syms,close:batch.close,dates:batch.dates,fit,agg};
+      this.drawCrossNote();this.drawSummary();this.drawNet();this.drawHeat();this.drawBetween();
+      loaded();
+    }catch(e){loaded();toast('跨行业模型拟合失败：'+e.message);}
+  },
+  drawCrossNote(){
+    const {keys,agg}=this.state,pairs=[];
+    keys.forEach(a=>keys.forEach(b=>{if(a!==b)pairs.push([a,b,agg.Agg[a][b]]);}));
+    pairs.sort((x,y)=>Math.abs(y[2])-Math.abs(x[2]));
+    const nm=k=>INDUSTRY[k]?INDUSTRY[k].name:k;
+    const pos=pairs.filter(p=>p[2]>0)[0],neg=pairs.filter(p=>p[2]<0)[0];
+    let line='';
+    if(pos)line+=`跨行业<b class="rel-pos">最强促进</b>：${nm(pos[0])} 受 ${nm(pos[1])} 带动（${pos[2].toFixed(2)}）；`;
+    if(neg)line+=`<b class="rel-neg">最强抑制</b>：${nm(neg[0])} 受 ${nm(neg[1])} 竞争压制（${neg[2].toFixed(2)}）。`;
+    if(!line)line='所选行业之间平均作用均接近 0，未呈现显著的跨行业促进或抑制。';
+    $('indCrossNote').innerHTML=`<p>已选择 ${keys.length} 个行业、${this.state.members.length} 家公司进行跨群落 gLV 拟合。`
+      +`行业间系数＝一个行业内公司受另一行业内公司的平均作用，青=跨行业共生促进、橙=生态位竞争抑制。</p><p>· ${line}</p>`;
+  },
+  drawSummary(){
+    const st=this.state,nm=s=>NODE_MAP[s].name;
+    if(st.mode==='multi'){
+      const {keys,members,fit,agg}=st;
+      let cp=0,cn=0,bp={v:0},bn={v:0};
+      keys.forEach(a=>keys.forEach(b=>{if(a===b)return;const v=agg.Agg[a][b];
+        if(v>0)cp++;else if(v<0)cn++;
+        if(v>bp.v)bp={a,b,v};if(v<bn.v)bn={a,b,v};}));
+      const kn=INDUSTRY[NODE_MAP[fit.keystone[0].sym].ind];
+      $('indSummary').innerHTML=[
+        ['对比行业',keys.length+' 个'],['群落物种',members.length+' 家'],
+        ['跨行业促进对',cp+' 对',C.pos],['跨行业抑制对',cn+' 对',C.neg],
+        ['最强行业促进',bp.v?`${INDUSTRY[bp.a].name}←${INDUSTRY[bp.b].name} ${bp.v.toFixed(2)}`:'--'],
+        ['最强行业抑制',bn.v?`${INDUSTRY[bn.a].name}←${INDUSTRY[bn.b].name} ${bn.v.toFixed(2)}`:'--']
+      ].map(x=>`<div class="sum-card"><span>${x[0]}</span><b style="color:${x[2]||'#dcebe2'};font-size:${String(x[1]).length>13?'14px':'21px'}">${x[1]}</b></div>`).join('');
+      return;
+    }
+    const {key,members,fit}=st;
+    const annG=(Math.exp(U.mean(fit.growth)*244)-1)*100;
+    let bestP={v:0},bestN={v:0};
+    members.forEach((a,i)=>members.forEach((b,j)=>{if(i===j)return;
+      if(fit.W[i][j]>bestP.v)bestP={a,b,v:fit.W[i][j]};if(fit.W[i][j]<bestN.v)bestN={a,b,v:fit.W[i][j]};}));
+    $('indSummary').innerHTML=[
+      ['群落物种',members.length+' 家'],
+      ['群落演替动能',(annG>=0?'+':'')+annG.toFixed(1)+'% / 年',annG>=0?C.up:C.down],
+      ['第一关键种',nm(fit.keystone[0].sym)],
+      ['最强促进对',bestP.v?`${nm(bestP.a)}←${nm(bestP.b)} ${bestP.v.toFixed(2)}`:'--'],
+      ['最强抑制对',bestN.v?`${nm(bestN.a)}←${nm(bestN.b)} ${bestN.v.toFixed(2)}`:'--']
+    ].map(x=>`<div class="sum-card"><span>${x[0]}</span><b style="color:${x[2]||'#dcebe2'};font-size:${String(x[1]).length>12?'15px':'22px'}">${x[1]}</b></div>`).join('');
+  },
+  drawNet(){
+    const st=this.state,{members,fit}=st,multi=st.mode==='multi';
+    const indOf=s=>NODE_MAP[s].ind;
+    const deg={};members.forEach((s,i)=>{deg[i]=U.sum(members.map((m,j)=>i===j?0:Math.abs(fit.W[i][j])));});
+    const mx=Math.max(...Object.values(deg),.01);
+    const data=members.map((s,i)=>({id:s,name:NODE_MAP[s].name,
+      symbolSize:(multi?12:16)+(multi?20:26)*Math.sqrt(deg[i]/mx),
+      itemStyle:{color:INDUSTRY[indOf(s)].color,borderColor:multi&&st.keys.length>1?'#0a1210':'#0a1210',borderWidth:1}}));
+    const links=[];
+    members.forEach((a,i)=>members.forEach((b,j)=>{if(i>=j)return;const w=(fit.W[i][j]+fit.W[j][i])/2;
+      if(Math.abs(w)<.12)return;
+      const cross=multi&&indOf(a)!==indOf(b);
+      links.push({source:a,target:b,lineStyle:{color:w>=0?C.pos:C.neg,width:(cross?1.6:1)+(cross?4:3)*Math.abs(w),
+        type:w<0?'dashed':'solid',opacity:cross?.92:(multi?.28:.7)},
+        label:{show:cross&&Math.abs(w)>.3,formatter:w.toFixed(2),color:C.txt,fontSize:10}});}));
+    chart('indNetChart').setOption({tooltip:{...TIP,formatter:p=>{if(p.dataType!=='node')return '';
+      return p.data.name+(multi?'（'+INDUSTRY[indOf(p.data.id)].name+'）':'');}},
+      series:[{type:'graph',layout:'force',roam:true,draggable:true,data,links,
+        force:{repulsion:multi?260:380,edgeLength:[multi?50:80,multi?130:170],gravity:multi?.14:.1},
+        label:{color:'#dcebe2',fontSize:multi?10:11,position:'right'},emphasis:{focus:'adjacency'}}]},true);
+  },
+  drawHeat(){
+    const st=this.state;
+    if(st.mode==='multi'){ // 行业间聚合作用矩阵 K×K
+      const {keys,agg}=st,names=keys.map(k=>INDUSTRY[k].name);
+      let vmax=.05;keys.forEach(a=>keys.forEach(b=>{if(a!==b)vmax=Math.max(vmax,Math.abs(agg.Agg[a][b]));}));
+      const hm=[];keys.forEach((a,i)=>keys.forEach((b,j)=>{if(i!==j)hm.push([j,i,+agg.Agg[a][b].toFixed(3)]);}));
+      chart('indHeatChart').setOption({tooltip:{...TIP,formatter:p=>`${names[p.data[1]]} 行业受 ${names[p.data[0]]} 行业<br/>平均 gLV 作用 ${p.data[2]}`},
+        grid:{left:120,right:20,top:20,bottom:96},
+        xAxis:{type:'category',data:names,...AX,axisLabel:{...AX.axisLabel,rotate:35,interval:0}},
+        yAxis:{type:'category',data:names,...AX},
+        visualMap:{min:-vmax,max:vmax,calculable:true,orient:'horizontal',left:'center',bottom:0,
+          textStyle:{color:C.txt2},inRange:{color:['#f0a048','#16271f','#58c8f0']}},
+        series:[{type:'heatmap',data:hm,label:{show:true,color:'#dcebe2',fontSize:11,formatter:p=>p.data[2].toFixed(2)},
+          itemStyle:{borderColor:'#0a1210',borderWidth:2}}]},true);
+      return;
+    }
+    const {members,fit}=st;
+    const names=members.map(s=>NODE_MAP[s].name);
+    let vmax=.1;fit.glvC.forEach((row,i)=>row.forEach((v,j)=>{if(i!==j)vmax=Math.max(vmax,Math.abs(v));}));
+    const hm=[];fit.glvC.forEach((row,i)=>row.forEach((v,j)=>{if(i!==j)hm.push([j,i,+v.toFixed(3)]);}));
+    chart('indHeatChart').setOption({tooltip:{...TIP,formatter:p=>`${names[p.data[1]]} 受 ${names[p.data[0]]} 作用<br/>gLV 系数 ${p.data[2]}`},
+      grid:{left:88,right:20,top:20,bottom:88},
+      xAxis:{type:'category',data:names,...AX,axisLabel:{...AX.axisLabel,rotate:45,interval:0}},
+      yAxis:{type:'category',data:names,...AX},
+      visualMap:{min:-vmax,max:vmax,calculable:true,orient:'horizontal',left:'center',bottom:0,
+        textStyle:{color:C.txt2},inRange:{color:['#f0a048','#16271f','#58c8f0']}},
+      series:[{type:'heatmap',data:hm,label:{show:members.length<=8,color:'#dcebe2',fontSize:9},
+        itemStyle:{borderColor:'#0a1210',borderWidth:1}}]},true);
+  },
+  drawBetween(){
+    const st=this.state;
+    const keys=st&&st.mode==='multi'?st.keys.slice():Object.keys(this.idxSeries);
+    const avail=keys.filter(k=>this.idxSeries[k]);if(!avail.length)return;
+    // 对齐长度（取最短）
+    let L=Math.min(...avail.map(k=>this.idxSeries[k].length));
+    const series=avail.map(k=>{const s=this.idxSeries[k].slice(-L),base=s[0]||1;
+      return {name:INDUSTRY[k].name,type:'line',symbol:'none',smooth:true,
+        data:s.map(v=>+(v/base).toFixed(4)),lineStyle:{width:2,color:INDUSTRY[k].color}};});
+    let note='';
+    if(st&&st.mode==='multi'&&avail.length>=2){ // 直接用公司级聚合的行业间作用
+      const pairs=[];avail.forEach(a=>avail.forEach(b=>{if(a!==b)pairs.push([a,b,st.agg.Agg[a][b]]);}));
+      pairs.sort((a,b)=>Math.abs(b[2])-Math.abs(a[2]));
+      note=pairs.slice(0,4).map(p=>`${INDUSTRY[p[0]].name}←${INDUSTRY[p[1]].name} ${p[2]>=0?'促进':'抑制'}${p[2].toFixed(2)}`).join('　|　');
+    }else if(avail.length>=2){
+      const close={};avail.forEach(k=>close[k]=this.idxSeries[k].slice(-L));
+      try{const bf=ECO.fitCommunity(close,avail,{win:120});
+        const pairs=[];avail.forEach((a,i)=>avail.forEach((b,j)=>{if(i!==j&&Math.abs(bf.W[i][j])>.15)
+          pairs.push([INDUSTRY[a].name,INDUSTRY[b].name,bf.W[i][j]]);}));
+        pairs.sort((a,b)=>Math.abs(b[2])-Math.abs(a[2]));
+        note=pairs.slice(0,4).map(p=>`${p[0]} ← ${p[1]}：${p[2]>=0?'促进':'抑制'} ${p[2].toFixed(2)}`).join('　|　');
+      }catch(e){}
+    }
+    chart('indBetweenChart').setOption({tooltip:{...TIP,trigger:'axis'},
+      title:note?{text:'行业间 gLV 作用：'+note,left:8,top:4,textStyle:{color:C.txt2,fontSize:11,fontWeight:400}}:undefined,
+      legend:{data:avail.map(k=>INDUSTRY[k].name),textStyle:{color:C.txt},top:26,icon:'roundRect',itemWidth:14,itemHeight:8},
+      grid:{left:56,right:24,top:note?64:40,bottom:30},
+      xAxis:{type:'category',data:U.range(L),...AX,
+        axisLabel:{...AX.axisLabel,formatter:v=>(this.idxDates[avail[0]]||[])[this.idxDates[avail[0]].length-L+v]||''},name:'交易日'},
+      yAxis:{type:'value',scale:true,...AX,name:'归一化行业指数'},series},true);
+  },
+  bind(){}
+};
+
+/* ---------- 视图4：方法学 ---------- */
+const Method={
+  render(){
+    $('methodIntro').innerHTML=`
+      <p><b>核心隐喻：</b>把 A 股市场视作一个「肠道微生态系统」——每家上市公司是一个「菌种」，每条供应链是一条「交叉喂养（cross-feeding）食物链」，竞争对手是「生态位重叠、争夺同一资源」的物种，资金与订单就是菌群赖以生长的「营养底物」，而宏观/行业环境则是「宿主与饮食环境」。</p>
+      <p><b>为什么菌群方法适合股价：</b>① 股价同样是<b>相对/成分数据</b>（个股涨跌只有相对于群落才有意义），直接算相关会产生大量伪相关，必须像 16S 测序一样先做 <b>CLR 成分变换</b>；② 物种间存在<b>非线性、带时滞的相互作用</b>（上游涨价传导到下游需要数天），与代谢物交叉喂养的时滞高度同构；③ 系统受随机扰动驱动、样本少、变量多，需要<b>贝叶斯收缩</b>稳定估计交互系数，这正是微生物时序建模（MDSINE2、gLV 贝叶斯推断）的标准做法；④ 群落存在<b>关键种（keystone species）</b>，对应产业链中牵一发而动全身的核心公司。</p>
+      <p><b>绝对定量时间序列：</b>相对丰度丢失了群落总量信息（如同只看百分比会误判菌群扩张/萎缩），本模型先把价格指数化（基期=1）作为「绝对生物量代理」，再叠加截面相对丰度，同时保留「群落总量」与「结构占比」两层信息。</p>`;
+    $('mapTable').innerHTML=`<thead><tr><th>肠道微生物生态</th><th>产业金融对应</th><th>模型中的实现</th></tr></thead><tbody>${[
+      ['菌种 / OTU','上市公司','网络节点，按行业着色'],
+      ['绝对丰度（qPCR/绝对定量）','价格指数化净值 × 成交生物量','基期归一 + 截面丰度 x_j(t)'],
+      ['相对丰度 / 成分数据','个股在群落中的市值占比','x_j=q_j/Σq，截面和为 1'],
+      ['CLR 变换（去成分伪相关）','消除同涨同跌的虚假相关','clr=ln q − 截面均值后再算共现'],
+      ['内禀增长率 r','公司自身趋势/均值回复','gLV 截距项（贝叶斯后验）'],
+      ['交互系数 a_ij：交叉喂养/抑菌','供应链促进 / 竞争抑制','贝叶斯 gLV 回归系数（带关系先验）'],
+      ['代谢传导时滞','价格沿产业链传导天数','滞后互相关 lag 0–10 日寻优'],
+      ['关键种 Keystone','产业链核心公司','加权度中心性排序'],
+      ['互利/偏利/拮抗/竞争','双向作用符号组合','a_ij 与 a_ji 符号定性'],
+      ['群落演替 / 稳态转换','行业轮动 / 板块趋势','平均增长率 + 行业指数 gLV'],
+      ['环境扰动 / 过程噪声','市场随机波动','后验蒙特卡洛路径区间']
+    ].map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    const cards=[
+      ['绝对定量代理','先以基期净值消除量纲，再计算截面相对丰度，同时保留群落总量与结构，避免「只看百分比」的成分数据陷阱。','<div class="formula">q_j(t)=P_j(t)/P_j(0)，x_j(t)=q_j/Σq</div>'],
+      ['CLR 成分变换','对每个交易日做跨物种中心对数比变换，从根源上压制成分数据导致的伪相关，用于共现网络。','<div class="formula">clr_j(t)=ln q_j(t) − mean_k ln q_k(t)</div>'],
+      ['贝叶斯广义 Lotka–Volterra（核心）','离散线性化 gLV：目标物种的对数增长 = 自身增长率 + 各邻体丰度×交互系数；供应链先验为正、竞争先验为负，高斯共轭后验自动收缩共线性。','<div class="formula">Δln x_i = r_i + Σ_j a_ij·x_j(t) + ε</div><div class="formula">后验：(X′X/σ²+τI)⁻¹(X′y/σ²+τm)</div>'],
+      ['VAR(1) 向量自回归','用滞后一日的全群落标准化收益解释目标收益，捕捉线性滞后传导，作为 gLV 的对照模型。','<div class="formula">r_i(t)=c_i+Σ_j B_ij r_j(t−1)</div>'],
+      ['Lasso 稀疏网络','迭代软阈值（IST）求 L1 稀疏解，自动筛出少数真实连接，模拟菌群中稀疏的互作拓扑。','<div class="formula">min ‖y−Xβ‖² + λ‖β‖₁</div>'],
+      ['滞后互相关（传导时效）','对每对物种在 0–10 个交易日内搜索 |相关| 最大的滞后阶，回答「上游变动几天后传导到本公司」。','<div class="formula">lag* = argmax_L |corr(r_i(t), r_j(t−L))|</div>'],
+      ['BMA 多模型集成','gLV / VAR / Lasso / CLR 共现四套网络，按各自最近 24 日一步预测误差 RMSE 做 softmax 加权，得到稳健的集成作用系数 W。','<div class="formula">w_m ∝ exp(−40·RMSE_m)，W=Σ w_m·N_m</div>'],
+      ['后验路径预测','邻体静态生态位假设下逐日积分 gLV，叠加过程噪声做 160 条蒙特卡洛路径，输出 P10/P50/P90 价格走廊与逐公司贡献分解。','<div class="formula">P50/P10/P90 = MonteCarlo(gLV, σ)</div>']
+    ];
+    $('methodGrid').innerHTML=cards.map(c=>`<div class="method-card"><h4>${c[0]}</h4><p>${c[1]}</p>${c[2]}</div>`).join('');
+    $('methodDisclaimer').innerHTML=`
+      · <b>行情数据：</b>在线模式通过腾讯证券（web.ifzq.gtimg.cn）与东方财富（push2his.eastmoney.com）公开行情接口获取前复权日 K；离线演示使用 12 只产业链标的（风电链 7 + 锂电链 5）共约 180 个交易日的真实历史日 K，已内置于本文件，无任何虚构价格。<br/>
+      · <b>关系数据：</b>供应链与竞争关系依据上市公司公开业务结构整理为内置产业图谱（${NODES.length} 家公司、${Object.keys(INDUSTRY).length} 大行业群落、${EDGES.length} 条关系）；图谱外股票可搜索并以纯数据驱动方式建模（关系先验为零）。<br/>
+      · <b>计算位置：</b>全部模型计算在浏览器本地完成，不上传任何数据，不依赖后端服务。<br/>
+      · <b>模型边界：</b>广义 Lotka–Volterra 源自微生物生态学，本应用属于<b>跨学科探索性研究工具</b>，其价格预测是基于历史统计关系的情景推演，无法预见政策、突发事件与基本面拐点；后验区间只反映历史波动尺度内的不确定性，不构成任何收益承诺。<br/>
+      · <b>免责声明：</b>本软件输出仅供学术研究与教学演示，<b>不构成任何投资建议</b>，据此操作风险自担。市场有风险，投资需谨慎。`;
+  }
+};
+
+/* ---------- 视图5：多公司关系工作台（自选公司 + 时间轴关系演变） ---------- */
+const Compare={
+  picked:['sh601615','sz002202','sz300772','sz002487'],
+  extName:{},win:90,step:20,rel:'all',lockPair:null,playTimer:null,state:null,cur:0,
+  nm(s){return (NODE_MAP[s]&&NODE_MAP[s].name)||this.extName[s]||s;},
+  indColor(s){return NODE_MAP[s]?INDUSTRY[NODE_MAP[s].ind].color:'#8fa89b';},
+  renderPicked(){
+    const box=$('cmpPicked');
+    if(!this.picked.length){box.innerHTML='<span class="pick-chip empty">尚未选择公司，请在上方搜索添加 2~10 家</span>';return;}
+    box.innerHTML=this.picked.map(s=>`<span class="pick-chip"><i style="background:${this.indColor(s)}"></i><b>${this.nm(s)}</b>
+      <span class="dim">${s.replace(/^(sh|sz|bj)/,'').toUpperCase()}</span><span class="x" data-x="${s}">×</span></span>`).join('');
+    box.onclick=e=>{const x=e.target.closest('.x');if(x){this.remove(x.dataset.x);}};
+  },
+  renderChainAdd(){
+    $('cmpChainAdd').innerHTML='整条产业链快速加入：'+Object.entries(INDUSTRY).map(([k,v])=>
+      `<button data-k="${k}">＋ ${v.name}</button>`).join('');
+    $('cmpChainAdd').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+      NODES.filter(n=>n[2]===b.dataset.k).forEach(n=>this.add(n[0],n[1]));};
+  },
+  add(sym,name){
+    if(this.picked.includes(sym)){toast('已在列表中');return;}
+    if(this.picked.length>=10){toast('最多同时对比 10 家');return;}
+    if(name)this.extName[sym]=name;this.picked.push(sym);this.renderPicked();
+  },
+  remove(sym){this.picked=this.picked.filter(s=>s!==sym);this.renderPicked();},
+  bind(){
+    this.renderPicked();this.renderChainAdd();
+    const inp=$('cmpInput'),dd=$('cmpDropdown');let tmr,seq=0;
+    const paint=list=>{
+      dd.innerHTML=list.slice(0,8).map(o=>`<div class="dd-item" data-s="${o.symbol}" data-n="${o.name}">
+        <b>${o.name}</b><span>${(o.code||o.symbol).toString().toUpperCase()} · ${o.type||o.ind||''}</span><i class="dd-tag">添加</i></div>`).join('')
+        ||'<div class="dd-item dim">无匹配，可直接输入6位代码</div>';
+      dd.classList.add('show');
+    };
+    async function run(self){
+      const kw=inp.value.trim(),my=++seq;if(!kw){dd.classList.remove('show');return;}
+      const loc=NODES.filter(n=>n[1].includes(kw)||n[0].includes(kw.toLowerCase())).slice(0,6)
+        .map(n=>({symbol:n[0],code:n[0].slice(2),name:n[1],type:INDUSTRY[n[2]].name}));
+      paint(loc);
+      try{const on=await DATA.search(kw);if(my!==seq)return;
+        const have=new Set(loc.map(x=>x.symbol));
+        paint(loc.concat(on.filter(o=>!have.has(o.symbol))));
+      }catch(e){}
+    }
+    inp.addEventListener('input',()=>{clearTimeout(tmr);tmr=setTimeout(()=>run(this),220);});
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){const f=dd.querySelector('.dd-item[data-s]');if(f){this.add(f.dataset.s,f.dataset.n);inp.value='';dd.classList.remove('show');}}});
+    dd.onclick=e=>{const it=e.target.closest('.dd-item[data-s]');if(it){this.add(it.dataset.s,it.dataset.n);inp.value='';dd.classList.remove('show');}};
+    document.addEventListener('click',e=>{if(!e.target.closest('.cmp-search'))dd.classList.remove('show');});
+    $('cmpRun').onclick=()=>this.analyze();
+    $('cmpClear').onclick=()=>{this.picked=[];this.extName={};this.renderPicked();$('cmpConsole').style.display='none';};
+    const seg=(id,cb)=>$(id).onclick=e=>{const b=e.target.closest('button');if(!b)return;
+      $(id).querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');cb(b.dataset);};
+    seg('cmpWinSeg',d=>{this.win=+d.w;if(this.state)this.analyze();});
+    seg('cmpStepSeg',d=>{this.step=+d.s;if(this.state)this.analyze();});
+    seg('cmpRelSeg',d=>{this.rel=d.r;if(this.state){this.drawNet();this.drawTable();}});
+    $('cmpRange').addEventListener('input',e=>this.setCur(+e.target.value));
+    $('cmpPlay').onclick=()=>this.togglePlay();
+  },
+  async analyze(){
+    if(this.picked.length<2){toast('请至少添加 2 家公司');return;}
+    this.stopPlay();this.lockPair=null;
+    loading('采集所选公司行情',10);
+    try{
+      const batch=await DATA.batchLoad(this.picked,(d,t)=>loading(`行情采集 ${d}/${t}`,10+Math.round(d/t*35)));
+      setSrc(batch.online);
+      if(batch.syms.length<2){loaded();toast('有效公司不足 2 家（可能行情获取失败）');return;}
+      this.picked=batch.syms;this.renderPicked();
+      loading('全样本 gLV/VAR/Lasso/BMA 拟合',52);await new Promise(r=>setTimeout(r,20));
+      const fit=ECO.fitCommunity(batch.close,batch.syms);
+      loading('滚动窗口关系演化拟合',72);
+      const frames=ECO.rollingFit(batch.close,batch.syms,batch.dates,{win:this.win,step:this.step});
+      // 固定色阶（跨时间窗可比）
+      let allv=[];frames.forEach(f=>f.W.forEach((row,i)=>row.forEach((v,j)=>{if(i!==j)allv.push(Math.abs(v));})));
+      allv.sort((a,b)=>a-b);const vmax=allv[Math.floor(allv.length*0.95)]||1;
+      this.state={members:batch.syms,close:batch.close,dates:batch.dates,fit,frames,vmax};
+      this.cur=frames.length-1;
+      const rg=$('cmpRange');rg.min=0;rg.max=frames.length-1;rg.value=this.cur;
+      $('cmpConsole').style.display='block';
+      this.drawSummary();this.drawNet();this.drawMatrix();this.drawTrend();this.drawTable();this.setDate();
+      loaded();
+    }catch(e){loaded();toast('关系分析失败：'+e.message);console.error(e);}
+  },
+  setCur(k){const st=this.state;if(!st)return;this.cur=k;
+    $('cmpRange').value=k;this.drawSummary();this.drawNet();this.drawTable();this.drawMatrix(null,true);this.drawTrend();this.setDate();
+  },
+  setDate(){const f=this.state.frames[this.cur];$('cmpWinDate').textContent=`窗口截至 ${f.date}（近${this.win}日） · 第 ${this.cur+1}/${this.state.frames.length} 窗`;},
+  togglePlay(){const btn=$('cmpPlay');
+    if(this.playTimer){this.stopPlay();return;}
+    btn.textContent='⏸ 暂停';
+    this.playTimer=setInterval(()=>{if(this.cur>=this.state.frames.length-1){this.stopPlay();return;}this.setCur(this.cur+1);},650);
+  },
+  stopPlay(){if(this.playTimer)clearInterval(this.playTimer);this.playTimer=null;const b=$('cmpPlay');if(b)b.textContent='▶ 播放演变';},
+  pairFilter(w){return this.rel==='pos'?w<=0:this.rel==='neg'?w>=0:false;},
+  drawNet(){
+    const st=this.state,m=st.members,f=st.frames[this.cur],deg={};
+    m.forEach((s,i)=>{deg[i]=U.sum(m.map((x,j)=>i===j?0:Math.abs(f.W[i][j])));});
+    const mx=Math.max(...Object.values(deg),.01);
+    const data=m.map((s,i)=>({id:s,name:this.nm(s),symbolSize:18+26*Math.sqrt(deg[i]/mx),
+      itemStyle:{color:this.indColor(s),borderColor:'#0a1210',borderWidth:1},label:{show:true}}));
+    const links=[];
+    m.forEach((a,i)=>m.forEach((b,j)=>{if(i===j)return;const w=f.W[i][j]; // b(来源 j) → a(受 i)
+      if(this.pairFilter(w))return;
+      if(Math.abs(w)<.06)return;
+      links.push({source:b,target:a,w,lineStyle:{color:w>=0?C.pos:C.neg,width:.8+3.2*Math.abs(w)/st.vmax,
+        type:w<0?'dashed':'solid',opacity:.72,curveness:.12}});}));
+    chart('cmpNetChart').setOption({tooltip:{...TIP,formatter:p=>p.dataType==='node'?p.data.name
+      :`${this.nm(p.data.source)} → ${this.nm(p.data.target)}<br/>${p.data.w>=0?'促进':'抑制'} ${p.data.w.toFixed(3)}`},
+      series:[{type:'graph',layout:'force',roam:true,draggable:true,data,links,
+        force:{repulsion:420,edgeLength:[70,160],gravity:.1},
+        label:{color:'#dcebe2',fontSize:11,position:'right'},emphasis:{focus:'adjacency',lineStyle:{width:3}}}]},true);
+  },
+  drawMatrix(pair,noRedraw){
+    const st=this.state,m=st.members,f=st.frames[this.cur];
+    const cell=(i,j)=>{if(i===j)return '<td class="diag">—</td>';
+      const w=f.W[i][j],t=Math.min(1,Math.abs(w)/st.vmax),
+        bg=w>=0?`rgba(88,200,240,${(0.12+0.6*t).toFixed(3)})`:`rgba(240,160,72,${(0.12+0.6*t).toFixed(3)})`,
+        sel=this.lockPair&&this.lockPair[0]===i&&this.lockPair[1]===j?'sel':'';
+      return `<td class="${sel}" data-i="${i}" data-j="${j}" style="background:${bg};color:${t>.55?'#0a1210':'#dcebe2'}">${w.toFixed(2)}</td>`;};
+    const head='<tr><th>受＼来源</th>'+m.map(s=>`<th>${this.nm(s)}</th>`).join('')+'</tr>';
+    const rows=m.map((s,i)=>`<tr><th>${this.nm(s)}</th>`+m.map((x,j)=>cell(i,j)).join('')+'</tr>').join('');
+    const tbl=$('cmpMatrix');tbl.innerHTML=head+rows;
+    if(!noRedraw)tbl.onclick=e=>{const td=e.target.closest('td[data-i]');if(!td)return;
+      this.lockPair=[+td.dataset.i,+td.dataset.j];this.drawMatrix(this.lockPair,true);this.drawTrend();};
+  },
+  drawTrend(){
+    const st=this.state,m=st.members,frames=st.frames,xdata=frames.map(f=>f.date);
+    let pairs=[];
+    if(this.lockPair){pairs=[this.lockPair];}
+    else{ // 全样本最强 top6
+      const all=[];m.forEach((a,i)=>m.forEach((b,j)=>{if(i!==j)all.push([i,j,Math.abs(st.fit.W[i][j])]);}));
+      all.sort((a,b)=>b[2]-a[2]);pairs=all.slice(0,6);
+    }
+    const palette=['#58c8f0','#f0a048','#4fd69c','#e6b34d','#c98bf2','#f2789c','#7c9cf2','#8bc46b'];
+    st._trendSeries=pairs.map(([i,j],k)=>({name:`${this.nm(m[j])}→${this.nm(m[i])}`,type:'line',symbol:'none',smooth:true,
+      data:frames.map(f=>+f.W[i][j].toFixed(4)),lineStyle:{width:this.lockPair?2.6:1.8,color:palette[k%palette.length]},
+      itemStyle:{color:palette[k%palette.length]},
+      markLine:k===0?{silent:true,symbol:'none',data:[
+        {yAxis:0,lineStyle:{color:'#314c3f',type:'dashed'}},
+        {xAxis:frames[this.cur].date,lineStyle:{color:'#e6b34d',width:1.5}}]}:undefined}));
+    $('cmpTrendHint').textContent=this.lockPair?`已锁定：${this.nm(m[this.lockPair[1]])} 对 ${this.nm(m[this.lockPair[0]])} 的作用随时间变化（点矩阵其他格可切换）`
+      :'默认展示全样本最强的若干对；竖线为当前时间窗，点左侧矩阵格可锁定任意一对';
+    chart('cmpTrendChart').setOption({tooltip:{...TIP,trigger:'axis',valueFormatter:v=>Number(v).toFixed(3)},
+      legend:{type:'scroll',top:2,textStyle:{color:C.txt2,fontSize:11}},
+      grid:{left:52,right:24,top:42,bottom:48},
+      xAxis:{type:'category',data:xdata,...AX,axisLabel:{...AX.axisLabel,rotate:frames.length>8?35:0}},
+      yAxis:{type:'value',scale:true,...AX,name:'gLV 作用系数'},
+      series:st._trendSeries},true);
+  },
+  drawTable(){
+    const st=this.state,m=st.members,f=st.frames[this.cur],rows=[];
+    m.forEach((a,i)=>m.forEach((b,j)=>{if(i===j)return;
+      const wc=f.W[i][j],wf=st.fit.W[i][j];if(this.pairFilter(wc))return;
+      rows.push({i,j,src:this.nm(m[j]),dst:this.nm(m[i]),wc,wf,dc:wc-wf,lag:f.lag[i][j],z:f.glvZ[i][j]});}));
+    rows.sort((a,b)=>Math.abs(b.wc)-Math.abs(a.wc));
+    const qual=w=>Math.abs(w)<.1?'中性':w>=0?(w>.4?'强促进':'弱促进'):(w<-.4?'强抑制':'竞争抑制');
+    const head=`<tr><th>来源（作用方）</th><th>→ 受作用</th><th>当前窗系数</th><th>全样本系数</th><th>近期变化Δ</th><th>传导时滞</th><th>显著性z</th><th>生态关系判定</th></tr>`;
+    const body=rows.slice(0,40).map(r=>`<tr>
+      <td>${r.src}</td><td>${r.dst}</td>
+      <td class="${r.wc>=0?'rel-pos':'rel-neg'} num">${r.wc.toFixed(3)}</td>
+      <td class="num">${r.wf.toFixed(3)}</td>
+      <td class="num" style="color:${Math.abs(r.dc)<.05?'#6b8578':r.dc>0?C.pos:C.neg}">${r.dc>=0?'+':''}${r.dc.toFixed(3)}</td>
+      <td class="num">${r.lag} 日</td><td class="num">${U.fmt(r.z)}</td>
+      <td><span class="tag ${r.wc>=0?'tag-u':'tag-c'}">${qual(r.wc)}</span></td></tr>`).join('');
+    $('cmpTable').innerHTML=head+body||'<tr><td colspan="8" class="dim">当前筛选下无关系边</td></tr>';
+  },
+  drawSummary(){
+    const st=this.state,m=st.members,f=st.frames[this.cur];
+    let bp={v:0},bn={v:0},flip=0;
+    m.forEach((a,i)=>m.forEach((b,j)=>{if(i===j)return;const w=f.W[i][j];
+      if(w>bp.v)bp={i,j,v:w};if(w<bn.v)bn={i,j,v:w};
+      if(w*st.fit.W[i][j]<0)flip++;}));
+    const ks=f.key[0];
+    $('cmpSummary').innerHTML=[
+      ['对比物种',m.length+' 家'],['时间窗口',st.frames.length+' 个'],
+      ['当前窗最强促进',bp.v?`${this.nm(m[bp.i])}←${this.nm(m[bp.j])} ${bp.v.toFixed(2)}`:'--'],
+      ['当前窗最强抑制',bn.v?`${this.nm(m[bn.i])}←${this.nm(m[bn.j])} ${bn.v.toFixed(2)}`:'--'],
+      ['当前窗关键种',this.nm(ks.sym)],
+      ['关系反转对数',flip+' 对']
+    ].map(([k,v])=>`<div class="sum-card"><span>${k}</span><b style="font-size:${String(v).length>13?'15px':'21px'}">${v}</b></div>`).join('');
+  }
+};
+
+/* ---------- 专用板块页（食品大健康 / 益生菌）：板块生态图谱 + gLV 群落模型 ---------- */
+const SECTOR_CONFIG={
+  foodhealth:{
+    key:'foodhealth',prefix:'foodhealth',view:'foodhealth',
+    coreDrv:'营养健康消费升级 · 功能化趋势',
+    intro:`<p><b>板块定位：</b>食品大健康群落覆盖<b>营养保健（膳食补充剂）</b>、<b>功能食品与发酵营养</b>、<b>健康乳品与奶酪</b>、<b>药食同源调味</b>与<b>婴童营养</b>等物种。在菌群生态学隐喻中，该群落是「<b>宿主营养底物层</b>」——这些公司向消费者这一「宿主」持续输送营养与功能成分，其「丰度」（经绝对定量代理与 CLR 变换后的价格生物量）由自身健康化升级趋势（内禀增长率 r）与群落内<b>供应链交叉喂养</b>、<b>品牌生态位竞争</b>共同决定。</p>
+      <p><b>为何适用菌群模型：</b>① 营养保健与乳品企业高度同质化、共享同一批原料与代工供应商，价格联动如同「共用碳源的菌群」；② 功能成分（辅酶 Q10、膳食纤维、益生菌、维生素）沿「原料 → 代工 → 品牌」逐级传导，存在明确的<b>代谢交叉喂养式时滞</b>；③ 赛道拥挤、竞争激烈，生态位重叠带来的竞争抑制显著。</p>`,
+    atlasHint:'节点=上市公司；青实线=供应链共生，橙虚线=竞争（生态位重叠）；点击节点进入生态位透视'
+  },
+  probio:{
+    key:'probio',prefix:'probio',view:'probio',
+    coreDrv:'肠道菌群科学产业化 · 益生菌消费渗透',
+    intro:`<p><b>板块定位：</b>益生菌群落是产业生态网络里<b>唯一「名副其实」的菌群</b>——它本身就是微生物产业。上游是<b>菌株原料与微生态制剂</b>（科拓生物、蔚蓝生物），中游是<b>益生元 / 功能糖（营养底物）</b>（百龙创园、保龄宝）与<b>发酵营养素</b>（嘉必优），下游是<b>乳酸菌饮料与乳品应用</b>（均瑶健康、燕塘乳业、新乳业、三元股份、天润乳业）。</p>
+      <p><b>生态学解读：</b>菌株原料商是「<b>供体菌种库</b>」，向乳企「接种」功能菌株（交叉喂养）；益生元是菌群赖以增殖的「<b>碳源底物</b>」，其放量与菌剂需求相互促进；下游乳企争夺同一批「肠道健康」消费者，构成<b>生态位重叠竞争</b>。这正是把 Lotka–Volterra 方程从实验室搬进产业的天然场景。</p>`,
+    atlasHint:'节点=上市公司；青实线=菌株/益生元供应（交叉喂养），橙虚线=竞争；点击节点进入生态位透视'
+  }
+};
+
+function makeSectorPage(cfg){
+  const P={
+    cfg,state:null,idxSeries:null,idxDates:null,
+    nm(s){return NODE_MAP[s]?NODE_MAP[s].name:s;},
+    members(){return NODES.filter(n=>n[2]===cfg.key).map(n=>n[0]);},
+    renderStatic(){
+      $(cfg.prefix+'Intro').innerHTML=cfg.intro;
+      $(cfg.prefix+'AtlasHint').textContent=cfg.atlasHint;
+      this.drawAtlasSummary();
+    },
+    drawAtlas(){
+      const key=cfg.key,ind=INDUSTRY[key];
+      let nodes=NODES.filter(n=>n[2]===key);
+      const ids=new Set(nodes.map(n=>n[0]));
+      const edges=EDGES.filter(e=>ids.has(e[0])&&ids.has(e[1]));
+      const deg={};edges.forEach(e=>{deg[e[0]]=(deg[e[0]]||0)+1;deg[e[1]]=(deg[e[1]]||0)+1;});
+      const dn=nodes.map(n=>deg[n[0]]||0),mx=Math.max(...dn,1);
+      const data=nodes.map(n=>({id:n[0],name:n[1],symbolSize:14+24*Math.sqrt((deg[n[0]]||0)/mx),
+        itemStyle:{color:ind.color,borderColor:'#0a1210',borderWidth:1},label:{show:(deg[n[0]]||0)>=2},value:deg[n[0]]||0}));
+      const links=edges.map(e=>({source:e[0],target:e[1],rel:e[2],strength:e[3],
+        lineStyle:{color:e[2]==='compete'?C.neg:C.pos,width:0.8+e[3]*1.0,type:e[2]==='compete'?'dashed':'solid',opacity:.75},curveness:.08}));
+      const c=chart(cfg.prefix+'Atlas');
+      c.setOption({tooltip:{...TIP,formatter:p=>p.dataType==='node'
+        ?`<b>${p.data.name}</b><br/>生态位宽度（关系度）：${p.data.value}`
+        :`${NODE_MAP[p.data.source].name} → ${NODE_MAP[p.data.target].name}<br/>${p.data.rel==='compete'?'竞争关系':'供应链'} · 强度${p.data.strength}`},
+        series:[{type:'graph',layout:'force',roam:true,draggable:true,data,links,
+          force:{repulsion:280,edgeLength:[80,160],gravity:.12},
+          label:{color:'#dcebe2',fontSize:11,position:'right'},
+          emphasis:{focus:'adjacency',lineStyle:{width:3}},lineStyle:{color:ind.color}}]},true);
+      c.off('click');c.on('click',p=>{if(p.dataType==='node')App.openCompany(p.data.id);});
+    },
+    drawAtlasSummary(){
+      const key=cfg.key,nodes=NODES.filter(n=>n[2]===key);
+      const edges=EDGES.filter(e=>IND_BY_SYM[e[0]]===key&&IND_BY_SYM[e[1]]===key);
+      const deg={};edges.forEach(e=>{deg[e[0]]=(deg[e[0]]||0)+1;deg[e[1]]=(deg[e[1]]||0)+1;});
+      const upN=edges.filter(e=>e[2]==='up').length,cpN=edges.length-upN;
+      const keyEntry=Object.entries(deg).sort((a,b)=>b[1]-a[1])[0];
+      const keyName=keyEntry?NODE_MAP[keyEntry[0]].name:'--';
+      $(cfg.prefix+'Summary').innerHTML=[
+        ['板块物种（上市公司）',nodes.length+' 家'],['生态关系',edges.length+' 条'],
+        ['供应链共生',upN+' 条'],['竞争生态位重叠',cpN+' 条'],
+        ['图谱关键种（度最大）',keyName],['核心驱动',cfg.coreDrv]
+      ].map(([k,v])=>`<div class="sum-card"><span>${k}</span><b style="font-size:${String(v).length>8?'14px':'21px'}">${v}</b></div>`).join('');
+    },
+    async runCommunity(){
+      const members=this.members();
+      if(!members.length){toast('该板块暂无图谱物种');return;}
+      loading(`拟合「${INDUSTRY[cfg.key].name}」群落模型`,10);
+      try{
+        const batch=await DATA.batchLoad(members,(d,t)=>loading(`板块群落行情 ${d}/${t}`,10+Math.round(d/t*50)));
+        setSrc(batch.online);
+        loading('板块 gLV / 共现 / 关键种拟合',70);
+        const fit=ECO.fitCommunity(batch.close,batch.syms);
+        this.state={members:batch.syms,close:batch.close,dates:batch.dates,fit};
+        this.idxSeries=ECO.industryIndex(batch.close,batch.syms);this.idxDates=batch.dates;
+        this.drawCommSummary();this.drawNet();this.drawHeat();this.drawIndex();
+        loaded();
+      }catch(e){loaded();toast('板块群落拟合失败：'+e.message);}
+    },
+    drawCommSummary(){
+      const {members,fit}=this.state,nm=s=>NODE_MAP[s].name;
+      const annG=(Math.exp(U.mean(fit.growth)*244)-1)*100;
+      let bestP={v:0},bestN={v:0};
+      members.forEach((a,i)=>members.forEach((b,j)=>{if(i===j)return;
+        if(fit.W[i][j]>bestP.v)bestP={a,b,v:fit.W[i][j]};if(fit.W[i][j]<bestN.v)bestN={a,b,v:fit.W[i][j]};}));
+      $(cfg.prefix+'CommSummary').innerHTML=[
+        ['群落物种',members.length+' 家'],
+        ['群落演替动能',(annG>=0?'+':'')+annG.toFixed(1)+'% / 年',annG>=0?C.up:C.down],
+        ['第一关键种',nm(fit.keystone[0].sym)],
+        ['最强促进对',bestP.v?`${nm(bestP.a)}←${nm(bestP.b)} ${bestP.v.toFixed(2)}`:'--'],
+        ['最强抑制对',bestN.v?`${nm(bestN.a)}←${nm(bestN.b)} ${bestN.v.toFixed(2)}`:'--']
+      ].map(x=>`<div class="sum-card"><span>${x[0]}</span><b style="color:${x[2]||'#dcebe2'};font-size:${String(x[1]).length>12?'14px':'21px'}">${x[1]}</b></div>`).join('');
+    },
+    drawNet(){
+      const {members,fit}=this.state,indOf=s=>NODE_MAP[s].ind;
+      const deg={};members.forEach((s,i)=>{deg[i]=U.sum(members.map((m,j)=>i===j?0:Math.abs(fit.W[i][j])));});
+      const mx=Math.max(...Object.values(deg),.01);
+      const data=members.map((s,i)=>({id:s,name:NODE_MAP[s].name,
+        symbolSize:16+26*Math.sqrt(deg[i]/mx),
+        itemStyle:{color:INDUSTRY[indOf(s)].color,borderColor:'#0a1210',borderWidth:1}}));
+      const links=[];
+      members.forEach((a,i)=>members.forEach((b,j)=>{if(i>=j)return;const w=(fit.W[i][j]+fit.W[j][i])/2;
+        if(Math.abs(w)<.12)return;
+        links.push({source:a,target:b,lineStyle:{color:w>=0?C.pos:C.neg,width:1+3*Math.abs(w),
+          type:w<0?'dashed':'solid',opacity:.7}});}));
+      chart(cfg.prefix+'Net').setOption({tooltip:{...TIP,formatter:p=>p.dataType==='node'?p.data.name:''},
+        series:[{type:'graph',layout:'force',roam:true,draggable:true,data,links,
+          force:{repulsion:380,edgeLength:[80,170],gravity:.1},
+          label:{color:'#dcebe2',fontSize:11,position:'right'},emphasis:{focus:'adjacency'}}]},true);
+    },
+    drawHeat(){
+      const {members,fit}=this.state,names=members.map(s=>NODE_MAP[s].name);
+      let vmax=.1;fit.glvC.forEach((row,i)=>row.forEach((v,j)=>{if(i!==j)vmax=Math.max(vmax,Math.abs(v));}));
+      const hm=[];fit.glvC.forEach((row,i)=>row.forEach((v,j)=>{if(i!==j)hm.push([j,i,+v.toFixed(3)]);}));
+      chart(cfg.prefix+'Heat').setOption({tooltip:{...TIP,formatter:p=>`${names[p.data[1]]} 受 ${names[p.data[0]]} 作用<br/>gLV 系数 ${p.data[2]}`},
+        grid:{left:88,right:20,top:20,bottom:88},
+        xAxis:{type:'category',data:names,...AX,axisLabel:{...AX.axisLabel,rotate:45,interval:0}},
+        yAxis:{type:'category',data:names,...AX},
+        visualMap:{min:-vmax,max:vmax,calculable:true,orient:'horizontal',left:'center',bottom:0,
+          textStyle:{color:C.txt2},inRange:{color:['#f0a048','#16271f','#58c8f0']}},
+        series:[{type:'heatmap',data:hm,label:{show:members.length<=8,color:'#dcebe2',fontSize:9},
+          itemStyle:{borderColor:'#0a1210',borderWidth:1}}]},true);
+    },
+    drawIndex(){
+      if(!this.idxSeries)return;
+      const s=this.idxSeries,base=s[0]||1;
+      const data=s.map(v=>+(v/base).toFixed(4));
+      const dates=this.idxDates||[];
+      chart(cfg.prefix+'Index').setOption({tooltip:{...TIP,trigger:'axis'},
+        grid:{left:52,right:24,top:30,bottom:30},
+        xAxis:{type:'category',data:U.range(data.length),...AX,
+          axisLabel:{...AX.axisLabel,formatter:v=>dates[v]||''},name:'交易日'},
+        yAxis:{type:'value',scale:true,...AX,name:'板块等权指数'},
+        series:[{type:'line',data,smooth:true,symbol:'none',lineStyle:{width:2.5,color:INDUSTRY[cfg.key].color},
+          areaStyle:{color:INDUSTRY[cfg.key].color+'22'}}]},true);
+    },
+    bind(){ $(cfg.prefix+'Run').onclick=()=>this.runCommunity(); }
+  };
+  return P;
+}
+const SectorPages={
+  foodhealth:makeSectorPage(SECTOR_CONFIG.foodhealth),
+  probio:makeSectorPage(SECTOR_CONFIG.probio)
+};
+
+/* ---------- 全局搜索 / Tab / 启动 ---------- */
+const App={
+  openCompany(sym){this.switchView('niche');Niche.load(sym);},
+  openChain(key){ // 打开某条产业链：回到图谱并筛选该行业群落
+    if(!INDUSTRY[key])return;
+    this.switchView('atlas');S.atlasInd=key;
+    const chips=$('atlasIndChips');
+    if(chips)chips.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.k===key));
+    Atlas.draw();
+    const info=INDUSTRY[key],n=NODES.filter(n=>n[2]===key).length;
+    toast(`已进入「${info.name}」产业链群落（${n} 家上市公司）`);
+  },
+  switchView(v){
+    S.view=v;
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+    document.querySelectorAll('.view').forEach(s=>s.classList.toggle('active',s.id==='view-'+v));
+    setTimeout(()=>Object.values(CHARTS).forEach(c=>c.resize()),60);
+    // 行业群落模型按需懒加载（首次进入时按当前多选拟合）
+    if(v==='industry'&&!this._indLoaded){this._indLoaded=S.indMulti.join(',');Industry.reload();}
+    // 专用板块页：首次进入绘制板块生态图谱并自动拟合群落模型
+    if(v==='foodhealth'&&!this._fhLoaded){this._fhLoaded=true;SectorPages.foodhealth.drawAtlas();SectorPages.foodhealth.runCommunity();}
+    if(v==='probio'&&!this._pbLoaded){this._pbLoaded=true;SectorPages.probio.drawAtlas();SectorPages.probio.runCommunity();}
+    // 多公司关系：首次进入自动拟合默认公司群落
+    if(v==='compare'&&!this._cmpInited){this._cmpInited=true;Compare.analyze();}
+  },
+  bindTabs(){
+    document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('.tab-btn');if(!b)return;this.switchView(b.dataset.view);};
+  },
+  bindSearch(){
+    const inp=$('searchInput'),dd=$('searchDropdown');let tmr,seq=0;
+    // 产业链匹配（名称/别名/拼音首字母由别名覆盖）
+    const chains=kw=>Object.entries(INDUSTRY).filter(([k,v])=>{
+      const hay=(v.name+' '+(v.alias||[]).join(' ')+' '+k).toLowerCase();
+      return hay.includes(kw.toLowerCase());
+    }).map(([k,v])=>({chain:k,name:v.name,color:v.color,
+      n:NODES.filter(x=>x[2]===k).length,e:EDGES.filter(x=>{const a=IND_BY_SYM[x[0]],b=IND_BY_SYM[x[1]];return a===k&&b===k;}).length}));
+    // 本地股票匹配
+    const localStk=kw=>NODES.filter(n=>n[1].includes(kw)||n[0].includes(kw.toLowerCase())).slice(0,6)
+      .map(n=>({symbol:n[0],name:n[1],type:INDUSTRY[n[2]].name,ind:INDUSTRY[n[2]].name,local:true}));
+    const itemStock=o=>{const cd=o.code||o.symbol.replace(/^(sh|sz|bj)/,'');
+      return `<div class="dd-item" data-s="${o.symbol}"><b>${o.name}</b><span>${String(cd).toUpperCase()} · ${o.type||o.ind||''}</span><i class="dd-tag">股票</i></div>`;};
+    const itemChain=c=>`<div class="dd-item dd-chain" data-c="${c.chain}"><b>${c.name}</b><span>${c.n} 家公司 · ${c.e} 条关系</span><i class="dd-tag chain" style="--tc:${c.color}">产业链</i></div>`;
+    const paint=(chs,stks,onlineNote)=>{
+      let html='';
+      if(chs.length)html+='<div class="dd-group">产业链群落</div>'+chs.slice(0,9).map(itemChain).join('');
+      if(stks.length)html+='<div class="dd-group">上市公司</div>'+stks.slice(0,8).map(itemStock).join('');
+      if(onlineNote)html+=onlineNote;
+      if(!html)html='<div class="dd-item dim">未找到匹配项：可点产业链浏览，或直接输入 6 位代码查询任意 A 股</div>';
+      dd.innerHTML=html;dd.classList.add('show');
+    };
+    async function run(){
+      const kw=inp.value.trim();const my=++seq;if(!kw){dd.classList.remove('show');return;}
+      // 1) 立即渲染本地结果（产业链 + 内置股票），不等待在线接口
+      const chs=chains(kw),stks=localStk(kw);
+      paint(chs,stks,(chs.length||stks.length)?'<div class="dd-item dim">正在联网检索更多股票…</div>':null);
+      // 2) 在线结果异步追加（不阻塞、不覆盖产业链项）
+      try{
+        const online=await DATA.search(kw);
+        if(my!==seq)return; // 已被新输入取代
+        const have=new Set(stks.map(x=>x.symbol));
+        const add=online.filter(o=>!have.has(o.symbol)).slice(0,8);
+        paint(chs,stks.concat(add),null);
+      }catch(e){if(my===seq)paint(chs,stks,null);}
+    }
+    inp.addEventListener('input',()=>{clearTimeout(tmr);tmr=setTimeout(run,220);});
+    inp.addEventListener('focus',()=>{if(inp.value.trim())run();});
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){
+      const c=dd.querySelector('.dd-item[data-c]'),s=dd.querySelector('.dd-item[data-s]');
+      if(s)pickStock(s.dataset.s);else if(c)pickChain(c.dataset.c);
+    }});
+    const pickStock=sym=>{dd.classList.remove('show');inp.value='';this.openCompany(sym);};
+    const pickChain=k=>{dd.classList.remove('show');inp.value='';this.openChain(k);};
+    dd.onclick=e=>{
+      const s=e.target.closest('.dd-item[data-s]');if(s){pickStock(s.dataset.s);return;}
+      const c=e.target.closest('.dd-item[data-c]');if(c)pickChain(c.dataset.c);
+    };
+    document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))dd.classList.remove('show');});
+  },
+  bindResize(){
+    const ro=new ResizeObserver(es=>es.forEach(e=>{const id=e.target.id;if(CHARTS[id])CHARTS[id].resize();}));
+    document.querySelectorAll('.chart-box').forEach(el=>ro.observe(el));
+  },
+  init(){
+    this.bindTabs();this.bindSearch();this.bindResize();
+    Atlas.bindSegs();Niche.bindSegs();Compare.bind();
+    Atlas.render();Industry.renderChips();Method.render();
+    SectorPages.foodhealth.renderStatic();SectorPages.foodhealth.bind();
+    SectorPages.probio.renderStatic();SectorPages.probio.bind();
+    // 预载默认中心（明阳智能，后台静默拟合，不遮挡第一页图谱）；行业群落进入板块时按需拟合
+    Niche.load('sh601615',false,true);
+  }
+};
+window.addEventListener('DOMContentLoaded',()=>App.init());
+
+</script>
+</body>
+</html>
